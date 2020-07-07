@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1588392432955.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "763445001",
+    "id" : "977F28FA",
+    "lastKnownWriteTime" : 1588433557,
+    "last_content_update" : 1588433557136,
+    "path" : "~/BERA Mentoring/Kirby April 2020/AVI analyses/1_scripts/1_April5AVI regular nonspatial mixture model using unmarked.R",
+    "project_path" : "1_scripts/1_April5AVI regular nonspatial mixture model using unmarked.R",
+    "properties" : {
+        "cursorPosition" : "753,0",
+        "scrollLine" : "747"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -1,0 +1,2 @@
+"","model","formula","lam(Fen_150)","SElam(Fen_150)","lam(Int)","SElam(Int)","lam(Swamp_150)","SElam(Swamp_150)","lam(Tremblingaspen_150)","SElam(Tremblingaspen_150)","p(Int)","SEp(Int)","Converge","CondNum","negLogLike","nPars","n","AIC","delta","AICwt","Rsq","cumltvWt"
+"1","4/7/9","~1 ~ Fen_150 + Swamp_150 + Tremblingaspen_150 + 1",-142.866378270011,127.974787709694,-30.1729075960286,30.0746102609418,13.7697038914132,2.648723137756,-1.46215854457089,0.618915694758156,-4.43832029822253,0.645392399618408,0,922349.116495709,71.990487808169,5,98,153.980975616338,0,1,NA,1

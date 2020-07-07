@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1588552088981.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3371292179",
+    "id" : "473722F2",
+    "lastKnownWriteTime" : 1588563748,
+    "last_content_update" : 1588563748462,
+    "path" : "~/BERA Mentoring/Kirby April 2020/composite markdown/1_scripts/2_averagedpredictionsfrombestmodels.R",
+    "project_path" : "composite markdown/1_scripts/2_averagedpredictionsfrombestmodels.R",
+    "properties" : {
+        "cursorPosition" : "1711,0",
+        "scrollLine" : "1702"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

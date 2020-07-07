@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1588559346237.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3188519684",
+    "id" : "50AB93CF",
+    "lastKnownWriteTime" : 1588434756,
+    "last_content_update" : 1588434756,
+    "path" : "~/BERA Mentoring/Kirby April 2020/Beaudoin analyses/1_scripts/5_April3Beaudoin regular nonspatial mixture model COYE using unmarked.R",
+    "project_path" : "Beaudoin analyses/1_scripts/5_April3Beaudoin regular nonspatial mixture model COYE using unmarked.R",
+    "properties" : {
+        "cursorPosition" : "319,0",
+        "scrollLine" : "314"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

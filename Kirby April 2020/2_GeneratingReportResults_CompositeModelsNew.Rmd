@@ -1,0 +1,463 @@
+---
+title: "2_Report Composite Modelling Results"
+author: "L Leston"
+date: "29/04/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = normalizePath(".."))  #Sets the working directory to the project folder
+```
+
+
+```{r cars, echo=FALSE}
+#summary(cars)
+```
+
+
+
+```{r readaic, echo=FALSE}
+## Including Plots
+ALFL.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/ALFLbestmodels500.csv",header=TRUE)
+AIC.ALFL.AVI<-round(ALFL.AVI$AIC[1],2)
+ALFL.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/ALFLbestmodels50.csv",header=TRUE)
+AIC.ALFL.Beaudoin<-round(ALFL.Beaudoin$AIC[1],2)
+ALFL.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/ALFLbestmodels150.csv",header=TRUE)
+AIC.ALFL.Lidar<-round(ALFL.Lidar$AIC[1],2)
+ALFL.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/ALFLbestmodels.csv",header=TRUE)
+AIC.ALFL.Composite<-round(ALFL.Composite$AIC[1],2)
+
+AMRO.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/AMRObestmodels500.csv",header=TRUE)
+AIC.AMRO.AVI<-round(AMRO.AVI$AIC[1],2)
+AMRO.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/AMRObestmodels500.csv",header=TRUE)
+AIC.AMRO.Beaudoin<-round(AMRO.Beaudoin$AIC[1],2)
+AMRO.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/AMRObestmodels150.csv",header=TRUE)
+AIC.AMRO.Lidar<-round(AMRO.Lidar$AIC[1],2)
+AMRO.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/AMRObestmodels.csv",header=TRUE)
+AIC.AMRO.Composite<-round(AMRO.Composite$AIC[1],2)
+
+BOCH.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/BOCHbestmodels50.csv",header=TRUE)
+AIC.BOCH.AVI<-round(BOCH.AVI$AIC[1],2)
+BOCH.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/BOCHbestmodels500.csv",header=TRUE)
+AIC.BOCH.Beaudoin<-round(BOCH.Beaudoin$AIC[1],2)
+BOCH.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/BOCHbestmodels150.csv",header=TRUE)
+AIC.BOCH.Lidar<-round(BOCH.Lidar$AIC[1],2)
+BOCH.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/BOCHbestmodels.csv",header=TRUE)
+AIC.BOCH.Composite<-round(BOCH.Composite$AIC[1],2)
+
+CEDW.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/CEDWbestmodels150.csv",header=TRUE)
+AIC.CEDW.AVI<-round(CEDW.AVI$AIC[1],2)
+CEDW.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/CEDWbestmodels50.csv",header=TRUE)
+AIC.CEDW.Beaudoin<-round(CEDW.Beaudoin$AIC[1],2)
+CEDW.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/CEDWbestmodels500.csv",header=TRUE)
+AIC.CEDW.Lidar<-round(CEDW.Lidar$AIC[1],2)
+CEDW.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/CEDWbestmodels.csv",header=TRUE)
+AIC.CEDW.Composite<-round(CEDW.Composite$AIC[1],2)
+
+CHSP.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/CHSPbestmodels50.csv",header=TRUE)
+AIC.CHSP.AVI<-round(CHSP.AVI$AIC[1],2)
+CHSP.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/CHSPbestmodels500.csv",header=TRUE)
+AIC.CHSP.Beaudoin<-round(CHSP.Beaudoin$AIC[1],2)
+CHSP.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/CHSPbestmodels150.csv",header=TRUE)
+AIC.CHSP.Lidar<-round(CHSP.Lidar$AIC[1],2)
+CHSP.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/CHSPbestmodels.csv",header=TRUE)
+AIC.CHSP.Composite<-round(CHSP.Composite$AIC[1],2)
+
+COYE.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/COYEbestmodels50.csv",header=TRUE)
+AIC.COYE.AVI<-round(COYE.AVI$AIC[1],2)
+COYE.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/COYEbestmodels500.csv",header=TRUE)
+AIC.COYE.Beaudoin<-round(COYE.Beaudoin$AIC[1],2)
+COYE.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/COYEbestmodels150.csv",header=TRUE)
+AIC.COYE.Lidar<-round(COYE.Lidar$AIC[1],2)
+COYE.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/COYEbestmodels.csv",header=TRUE)
+AIC.COYE.Composite<-round(COYE.Composite$AIC[1],2)
+
+DEJU.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/DEJUbestmodels150.csv",header=TRUE)
+AIC.DEJU.AVI<-round(DEJU.AVI$AIC[1],2)
+DEJU.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/DEJUbestmodels50.csv",header=TRUE)
+AIC.DEJU.Beaudoin<-round(DEJU.Beaudoin$AIC[1],2)
+DEJU.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/DEJUbestmodels150.csv",header=TRUE)
+AIC.DEJU.Lidar<-round(DEJU.Lidar$AIC[1],2)
+DEJU.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/DEJUbestmodels.csv",header=TRUE)
+AIC.DEJU.Composite<-round(DEJU.Composite$AIC[1],2)
+
+GRAJ.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/GRAJbestmodels150.csv",header=TRUE)
+AIC.GRAJ.AVI<-round(GRAJ.AVI$AIC[1],2)
+GRAJ.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/GRAJbestmodels50.csv",header=TRUE)
+AIC.GRAJ.Beaudoin<-round(GRAJ.Beaudoin$AIC[1],2)
+GRAJ.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/GRAJbestmodels500.csv",header=TRUE)
+AIC.GRAJ.Lidar<-round(GRAJ.Lidar$AIC[1],2)
+GRAJ.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/GRAJbestmodels.csv",header=TRUE)
+AIC.GRAJ.Composite<-round(GRAJ.Composite$AIC[1],2)
+
+HETH.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/HETHbestmodels150.csv",header=TRUE)
+AIC.HETH.AVI<-round(HETH.AVI$AIC[1],2)
+HETH.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/HETHbestmodels500.csv",header=TRUE)
+AIC.HETH.Beaudoin<-round(HETH.Beaudoin$AIC[1],2)
+HETH.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/HETHbestmodels500.csv",header=TRUE)
+AIC.HETH.Lidar<-round(HETH.Lidar$AIC[1],2)
+HETH.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/HETHbestmodels.csv",header=TRUE)
+AIC.HETH.Composite<-round(HETH.Composite$AIC[1],2)
+
+LCSP.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/LCSPbestmodels500.csv",header=TRUE)
+AIC.LCSP.AVI<-round(LCSP.AVI$AIC[1],2)
+LCSP.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/LCSPbestmodels50.csv",header=TRUE)
+AIC.LCSP.Beaudoin<-round(LCSP.Beaudoin$AIC[1],2)
+LCSP.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/LCSPbestmodels150.csv",header=TRUE)
+AIC.LCSP.Lidar<-round(LCSP.Lidar$AIC[1],2)
+LCSP.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/LCSPbestmodels.csv",header=TRUE)
+AIC.LCSP.Composite<-round(LCSP.Composite$AIC[1],2)
+
+LISP.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/LISPbestmodels150.csv",header=TRUE)
+AIC.LISP.AVI<-round(LISP.AVI$AIC[1],2)
+LISP.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/LISPbestmodels150.csv",header=TRUE)
+AIC.LISP.Beaudoin<-round(LISP.Beaudoin$AIC[1],2)
+LISP.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/LISPbestmodels150.csv",header=TRUE)
+AIC.LISP.Lidar<-round(LISP.Lidar$AIC[1],2)
+LISP.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/LISPbestmodels.csv",header=TRUE)
+AIC.LISP.Composite<-round(LISP.Composite$AIC[1],2)
+
+OSFL.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/OSFLbestmodels500.csv",header=TRUE)
+AIC.OSFL.AVI<-round(OSFL.AVI$AIC[1],2)
+OSFL.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/OSFLbestmodels500.csv",header=TRUE)
+AIC.OSFL.Beaudoin<-round(OSFL.Beaudoin$AIC[1],2)
+OSFL.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/OSFLbestmodels500.csv",header=TRUE)
+AIC.OSFL.Lidar<-round(OSFL.Lidar$AIC[1],2)
+OSFL.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/OSFLbestmodels.csv",header=TRUE)
+AIC.OSFL.Composite<-round(OSFL.Composite$AIC[1],2)
+
+OVEN.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/OVENbestmodels500.csv",header=TRUE)
+AIC.OVEN.AVI<-round(OVEN.AVI$AIC[1],2)
+OVEN.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/OVENbestmodels500.csv",header=TRUE)
+AIC.OVEN.Beaudoin<-round(OVEN.Beaudoin$AIC[1],2)
+OVEN.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/OVENbestmodels500.csv",header=TRUE)
+AIC.OVEN.Lidar<-round(OVEN.Lidar$AIC[1],2)
+OVEN.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/OVENbestmodels.csv",header=TRUE)
+AIC.OVEN.Composite<-round(OVEN.Composite$AIC[1],2)
+
+PAWA.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/PAWAbestmodels150.csv",header=TRUE)
+AIC.PAWA.AVI<-round(PAWA.AVI$AIC[1],2)
+PAWA.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/PAWAbestmodels500.csv",header=TRUE)
+AIC.PAWA.Beaudoin<-round(PAWA.Beaudoin$AIC[1],2)
+PAWA.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/PAWAbestmodels500.csv",header=TRUE)
+AIC.PAWA.Lidar<-round(PAWA.Lidar$AIC[1],2)
+PAWA.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/PAWAbestmodels.csv",header=TRUE)
+AIC.PAWA.Composite<-round(PAWA.Composite$AIC[1],2)
+
+REVI.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/REVIbestmodels500.csv",header=TRUE)
+AIC.REVI.AVI<-round(REVI.AVI$AIC[1],2)
+REVI.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/REVIbestmodels500.csv",header=TRUE)
+AIC.REVI.Beaudoin<-round(REVI.Beaudoin$AIC[1],2)
+REVI.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/REVIbestmodels500.csv",header=TRUE)
+AIC.REVI.Lidar<-round(REVI.Lidar$AIC[1],2)
+REVI.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/REVIbestmodels.csv",header=TRUE)
+AIC.REVI.Composite<-round(REVI.Composite$AIC[1],2)
+
+RCKI.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/RCKIbestmodels150.csv",header=TRUE)
+AIC.RCKI.AVI<-round(RCKI.AVI$AIC[1],2)
+RCKI.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/RCKIbestmodels500.csv",header=TRUE)
+AIC.RCKI.Beaudoin<-round(RCKI.Beaudoin$AIC[1],2)
+RCKI.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/RCKIbestmodels150.csv",header=TRUE)
+AIC.RCKI.Lidar<-round(RCKI.Lidar$AIC[1],2)
+RCKI.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/RCKIbestmodels.csv",header=TRUE)
+AIC.RCKI.Composite<-round(RCKI.Composite$AIC[1],2)
+
+SWTH.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/SWTHbestmodels500.csv",header=TRUE)
+AIC.SWTH.AVI<-round(SWTH.AVI$AIC[1],2)
+SWTH.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/SWTHbestmodels500.csv",header=TRUE)
+AIC.SWTH.Beaudoin<-round(SWTH.Beaudoin$AIC[1],2)
+SWTH.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/SWTHbestmodels500.csv",header=TRUE)
+AIC.SWTH.Lidar<-round(SWTH.Lidar$AIC[1],2)
+SWTH.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/SWTHbestmodels.csv",header=TRUE)
+AIC.SWTH.Composite<-round(SWTH.Composite$AIC[1],2)
+
+SWSP.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/SWSPbestmodels150.csv",header=TRUE)
+AIC.SWSP.AVI<-round(SWSP.AVI$AIC[1],2)
+SWSP.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/SWSPbestmodels150.csv",header=TRUE)
+AIC.SWSP.Beaudoin<-round(SWSP.Beaudoin$AIC[1],2)
+SWSP.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/SWSPbestmodels150.csv",header=TRUE)
+AIC.SWSP.Lidar<-round(SWSP.Lidar$AIC[1],2)
+SWSP.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/SWSPbestmodels.csv",header=TRUE)
+AIC.SWSP.Composite<-round(SWSP.Composite$AIC[1],2)
+
+TEWA.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/TEWAbestmodels500.csv",header=TRUE)
+AIC.TEWA.AVI<-round(TEWA.AVI$AIC[1],2)
+TEWA.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/TEWAbestmodels500.csv",header=TRUE)
+AIC.TEWA.Beaudoin<-round(TEWA.Beaudoin$AIC[1],2)
+TEWA.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/TEWAbestmodels150.csv",header=TRUE)
+AIC.TEWA.Lidar<-round(TEWA.Lidar$AIC[1],2)
+TEWA.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/TEWAbestmodels.csv",header=TRUE)
+AIC.TEWA.Composite<-round(TEWA.Composite$AIC[1],2)
+
+WIWR.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/WIWRbestmodels500.csv",header=TRUE)
+AIC.WIWR.AVI<-round(WIWR.AVI$AIC[1],2)
+WIWR.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/WIWRbestmodels500.csv",header=TRUE)
+AIC.WIWR.Beaudoin<-round(WIWR.Beaudoin$AIC[1],2)
+WIWR.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/WIWRbestmodels500.csv",header=TRUE)
+AIC.WIWR.Lidar<-round(WIWR.Lidar$AIC[1],2)
+WIWR.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/WIWRbestmodels.csv",header=TRUE)
+AIC.WIWR.Composite<-round(WIWR.Composite$AIC[1],2)
+
+WTSP.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/WTSPbestmodels500.csv",header=TRUE)
+AIC.WTSP.AVI<-round(WTSP.AVI$AIC[1],2)
+WTSP.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/WTSPbestmodels500.csv",header=TRUE)
+AIC.WTSP.Beaudoin<-round(WTSP.Beaudoin$AIC[1],2)
+WTSP.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/WTSPbestmodels150.csv",header=TRUE)
+AIC.WTSP.Lidar<-round(WTSP.Lidar$AIC[1],2)
+WTSP.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/WTSPbestmodels.csv",header=TRUE)
+AIC.WTSP.Composite<-round(WTSP.Composite$AIC[1],2)
+
+YRWA.AVI<-read.csv("/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/YRWAbestmodels50.csv",header=TRUE)
+AIC.YRWA.AVI<-round(YRWA.AVI$AIC[1],2)
+YRWA.Beaudoin<-read.csv("/Kirby April 2020/Beaudoin analyses/0_data/processed/unmarked/results/YRWAbestmodels50.csv",header=TRUE)
+AIC.YRWA.Beaudoin<-round(YRWA.Beaudoin$AIC[1],2)
+YRWA.Lidar<-read.csv("/Kirby April 2020/Lidar analyses/0_data/processed/unmarked/results/YRWAbestmodels150.csv",header=TRUE)
+AIC.YRWA.Lidar<-round(YRWA.Lidar$AIC[1],2)
+YRWA.Composite<-read.csv("/Kirby April 2020/Composite analyses/0_data/processed/unmarked/results/YRWAbestmodels.csv",header=TRUE)
+AIC.YRWA.Composite<-round(YRWA.Composite$AIC[1],2)
+
+```
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.ALFL.AVI`), B) satellite-based (AIC= `r AIC.ALFL.Beaudoin`), C) lidar-based (AIC= `r AIC.ALFL.Lidar`), and D) composite (AIC= `r AIC.ALFL.Composite`) *N*-mixture models predicting abundance of Alder Flycatcher *Empidonax alnorum*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/ALFLtop500m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModel500mAVIPredictedALFL.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/ALFLtop50m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel50mSatellitePredictedALFL.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/ALFLtop150m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModelLIDAR150mPredictedALFL.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/ALFLtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedALFL.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.AMRO.AVI`), B) satellite-based (AIC= `r AIC.AMRO.Beaudoin`), C) lidar-based (AIC= `r AIC.AMRO.Lidar`), and D) composite (AIC= `r AIC.AMRO.Composite`) *N*-mixture models predicting abundance of American Robin *Turdus migratorius*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/AMROtop500m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModel500mAVIPredictedAMRO.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/AMROtop500m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel500mSatellitePredictedAMRO.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/AMROtop150m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModelLIDAR150mPredictedAMRO.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/AMROtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedAMRO.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.BOCH.AVI`), B) satellite-based (AIC= `r AIC.BOCH.Beaudoin`), C) lidar-based (AIC= `r AIC.BOCH.Lidar`), and D) composite (AIC= `r AIC.BOCH.Composite`) *N*-mixture models predicting abundance of Boreal Chickadee *Poecile hudsonicus*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/BOCHtop50m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModel50mAVIPredictedBOCH.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/BOCHtop500m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel500mSatellitePredictedBOCH.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/BOCHtop150m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModelLIDAR150mPredictedBOCH.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/BOCHtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedBOCH.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.CEDW.AVI`), B) satellite-based (AIC= `r AIC.CEDW.Beaudoin`), C) lidar-based (AIC= `r AIC.CEDW.Lidar`), and D) composite (AIC= `r AIC.CEDW.Composite`) *N*-mixture models predicting abundance of Cedar Waxwing *Bombycilla cedrorum*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/CEDWtop150m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModelAVI150mPredictedCEDW.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/CEDWtop50m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel50mSatellitePredictedCEDW.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/CEDWtop500m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModel500mLIDARPredictedCEDW.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/CEDWtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedCEDW.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.CHSP.AVI`), B) satellite-based (AIC= `r AIC.CHSP.Beaudoin`), C) lidar-based (AIC= `r AIC.CHSP.Lidar`), and D) composite (AIC= `r AIC.CHSP.Composite`) *N*-mixture models predicting abundance of Chipping Sparrow *Spizella passerina*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/CHSPtop50m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModel50mAVIPredictedCHSP.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/CHSPtop500m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel500mSatellitePredictedCHSP.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/CHSPtop150m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModelLIDAR150mPredictedCHSP.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/CHSPtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedCHSP.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.COYE.AVI`), B) satellite-based (AIC= `r AIC.COYE.Beaudoin`), C) lidar-based (AIC= `r AIC.COYE.Lidar`), and D) composite (AIC= `r AIC.COYE.Composite`) *N*-mixture models predicting abundance of Common Yellowthroat *Geothlypis trichas*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/COYEtop50m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModel50mAVIPredictedCOYE.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/COYEtop500m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel500mSatellitePredictedCOYE.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/COYEtop150m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModelLIDAR150mPredictedCOYE.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/COYEtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedCOYE.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.DEJU.AVI`), B) satellite-based (AIC= `r AIC.DEJU.Beaudoin`), C) lidar-based (AIC= `r AIC.DEJU.Lidar`), and D) composite (AIC= `r AIC.DEJU.Composite`) *N*-mixture models predicting abundance of Dark-eyed Junco *Junco hyemalis*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/DEJUtop150m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModelAVI150mPredictedDEJU.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/DEJUtop50m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel50mSatellitePredictedDEJU.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/DEJUtop150m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModelLIDAR150mPredictedDEJU.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/DEJUtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedDEJU.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.GRAJ.AVI`), B) satellite-based (AIC= `r AIC.GRAJ.Beaudoin`), C) lidar-based (AIC= `r AIC.GRAJ.Lidar`), and D) composite (AIC= `r AIC.GRAJ.Composite`) *N*-mixture models predicting abundance of Gray Jay *Perisoreus canadensis*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/GRAJtop150m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModelAVI150mPredictedGRAJ.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/GRAJtop50m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel50mSatellitePredictedGRAJ.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/GRAJtop500m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModel500mLIDARPredictedGRAJ.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/GRAJtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedGRAJ.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.HETH.AVI`), B) satellite-based (AIC= `r AIC.HETH.Beaudoin`), C) lidar-based (AIC= `r AIC.HETH.Lidar`), and D) composite (AIC= `r AIC.HETH.Composite`) *N*-mixture models predicting abundance of Hermit Thrush *Catharus guttatus*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/HETHtop150m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModelAVI150mPredictedHETH.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/HETHtop500m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel500mSatellitePredictedHETH.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/HETHtop500m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModel500mLIDARPredictedHETH.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/HETHtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedHETH.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.LCSP.AVI`), B) satellite-based (AIC= `r AIC.LCSP.Beaudoin`), C) lidar-based (AIC= `r AIC.LCSP.Lidar`), and D) composite (AIC= `r AIC.LCSP.Composite`) *N*-mixture models predicting abundance of Le Conte's Sparrow *Ammodramus lecontei*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/LCSPtop500m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModel500mAVIPredictedLCSP.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/LCSPtop50m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel50mSatellitePredictedLCSP.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/LCSPtop150m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModelLIDAR150mPredictedLCSP.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/LCSPtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedLCSP.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.LISP.AVI`), B) satellite-based (AIC= `r AIC.LISP.Beaudoin`), C) lidar-based (AIC= `r AIC.LISP.Lidar`), and D) composite (AIC= `r AIC.LISP.Composite`) *N*-mixture models predicting abundance of Lincoln's Sparrow *Melospiza lincolnii*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/LISPtop150m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModelAVI150mPredictedLISP.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/LISPtop150m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModelSatellite150mPredictedLISP.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/LISPtop150m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModelLIDAR150mPredictedLISP.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/LISPtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedLISP.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.OSFL.AVI`), B) satellite-based (AIC= `r AIC.OSFL.Beaudoin`), C) lidar-based (AIC= `r AIC.OSFL.Lidar`), and D) composite (AIC= `r AIC.OSFL.Composite`) *N*-mixture models predicting abundance of Olive-sided Flycatcher *Contopus cooperi*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/OSFLtop500m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModel500mAVIPredictedOSFL.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/OSFLtop500m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel500mSatellitePredictedOSFL.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/OSFLtop500m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModel500mLIDARPredictedOSFL.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/OSFLtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedOSFL.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.OVEN.AVI`), B) satellite-based (AIC= `r AIC.OVEN.Beaudoin`), C) lidar-based (AIC= `r AIC.OVEN.Lidar`), and D) composite (AIC= `r AIC.OVEN.Composite`) *N*-mixture models predicting abundance of Ovenbird *Seiurus aurocapillus*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/OVENtop500m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModel500mAVIPredictedOVEN.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/OVENtop500m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel500mSatellitePredictedOVEN.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/OVENtop500m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModel500mLIDARPredictedOVEN.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/OVENtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedOVEN.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.PAWA.AVI`), B) satellite-based (AIC= `r AIC.PAWA.Beaudoin`), C) lidar-based (AIC= `r AIC.PAWA.Lidar`), and D) composite (AIC= `r AIC.PAWA.Composite`) *N*-mixture models predicting abundance of Palm Warbler *Setophaga palmarum*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/PAWAtop150m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModelAVI150mPredictedPAWA.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/PAWAtop500m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel500mSatellitePredictedPAWA.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/PAWAtop500m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModel500mLIDARPredictedPAWA.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/PAWAtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedPAWA.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.REVI.AVI`), B) satellite-based (AIC= `r AIC.REVI.Beaudoin`), C) lidar-based (AIC= `r AIC.REVI.Lidar`), and D) composite (AIC= `r AIC.REVI.Composite`) *N*-mixture models predicting abundance of Red-eyed Vireo *Vireo olivaceus*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/REVItop500m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModel500mAVIPredictedREVI.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/REVItop500m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel500mSatellitePredictedREVI.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/REVItop500m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModel500mLIDARPredictedREVI.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/REVItopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedREVI.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.RCKI.AVI`), B) satellite-based (AIC= `r AIC.RCKI.Beaudoin`), C) lidar-based (AIC= `r AIC.RCKI.Lidar`), and D) composite (AIC= `r AIC.RCKI.Composite`) *N*-mixture models predicting abundance of Ruby-crowned Kinglet *Regulus calendula*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/RCKItop150m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModelAVI150mPredictedRCKI.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/RCKItop500m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel500mSatellitePredictedRCKI.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/RCKItop150m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModelLIDAR150mPredictedRCKI.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/RCKItopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedRCKI.png){ width=33% } 
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.SWTH.AVI`), B) satellite-based (AIC= `r AIC.SWTH.Beaudoin`), C) lidar-based (AIC= `r AIC.SWTH.Lidar`), and D) composite (AIC= `r AIC.SWTH.Composite`) *N*-mixture models predicting abundance of Swainson's Thrush *Catharus ustulatus*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/SWTHtop500m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModel500mAVIPredictedSWTH.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/SWTHtop500m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel500mSatellitePredictedSWTH.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/SWTHtop500m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModel500mLIDARPredictedSWTH.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/SWTHtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedSWTH.png){ width=33% }
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.SWSP.AVI`), B) satellite-based (AIC= `r AIC.SWSP.Beaudoin`), C) lidar-based (AIC= `r AIC.SWSP.Lidar`), and D) composite (AIC= `r AIC.SWSP.Composite`) *N*-mixture models predicting abundance of Swamp Sparrow *Melospiza georgiana*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/SWSPtop150m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModelAVI150mPredictedSWSP.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/SWSPtop150m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModelSatellite150mPredictedSWSP.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/SWSPtop150m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModelLIDAR150mPredictedSWSP.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/SWSPtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedSWSP.png){ width=33% }
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.TEWA.AVI`), B) satellite-based (AIC= `r AIC.TEWA.Beaudoin`), C) lidar-based (AIC= `r AIC.TEWA.Lidar`), and D) composite (AIC= `r AIC.TEWA.Composite`) *N*-mixture models predicting abundance of Tennessee Warbler *Leiothlypis peregrina*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/TEWAtop500m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModel500mAVIPredictedTEWA.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/TEWAtop500m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel500mSatellitePredictedTEWA.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/TEWAtop150m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModelLIDAR150mPredictedTEWA.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/TEWAtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedTEWA.png){ width=33% }
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.WIWR.AVI`), B) satellite-based (AIC= `r AIC.WIWR.Beaudoin`), C) lidar-based (AIC= `r AIC.WIWR.Lidar`), and D) composite (AIC= `r AIC.WIWR.Composite`) *N*-mixture models predicting abundance of Winter Wren *Troglodytes hiemalis*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/WIWRtop500m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModel500mAVIPredictedWIWR.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/WIWRtop500m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel500mSatellitePredictedWIWR.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/WIWRtop500m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModel500mLIDARPredictedWIWR.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/WIWRtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedWIWR.png){ width=33% }
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.WTSP.AVI`), B) satellite-based (AIC= `r AIC.WTSP.Beaudoin`), C) lidar-based (AIC= `r AIC.WTSP.Lidar`), and D) composite (AIC= `r AIC.WTSP.Composite`) *N*-mixture models predicting abundance of White-throated Sparrow *Zonotrichia albicollis*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/WTSPtop500m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModel500mAVIPredictedWTSP.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/WTSPtop500m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel500mSatellitePredictedWTSP.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/WTSPtop150m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModelLIDAR150mPredictedWTSP.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/WTSPtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedWTSP.png){ width=33% }
+
+Model coefficients for the A) AVI-based (AIC= `r AIC.YRWA.AVI`), B) satellite-based (AIC= `r AIC.YRWA.Beaudoin`), C) lidar-based (AIC= `r AIC.YRWA.Lidar`), and D) composite (AIC= `r AIC.YRWA.Composite`) *N*-mixture models predicting abundance of Yellow-rumped Warbler *Setophaga coronata*, along with predicted abundances of this species in the Kirby grid from these respective models (E-H).
+
+
+A![](/Kirby April 2020/AVI analyses/3_outputs/figures/YRWAtop50m_AVImodel.png){ width=60% }E![](/Kirby April 2020/AVI analyses/3_outputs/maps/BestModel50mAVIPredictedYRWA.png){ width=33% }
+
+B![](/Kirby April 2020/Beaudoin analyses/3_outputs/figures/YRWAtop50m_Beaudoinmodel.png){ width=60% }F![](/Kirby April 2020/Beaudoin analyses/3_outputs/maps/BestModel50mSatellitePredictedYRWA.png){ width=33% }
+
+C![](/Kirby April 2020/Lidar analyses/3_outputs/figures/YRWAtop150m_LIDARmodel.png){ width=60% }G![](/Kirby April 2020/Lidar analyses/3_outputs/maps/BestModelLIDAR150mPredictedYRWA.png){ width=33% }
+
+D![](/Kirby April 2020/Composite analyses/3_outputs/figures/YRWAtopmodel.png){ width=60% }H![](/Kirby April 2020/Composite analyses/3_outputs/maps/BestModelPredictedYRWA.png){ width=33% }
+

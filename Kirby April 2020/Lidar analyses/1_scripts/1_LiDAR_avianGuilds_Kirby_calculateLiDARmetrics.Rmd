@@ -1,0 +1,410 @@
+
+# Generate LiDAR Metrics
+
+
+## Setup 
+ 
+1. Load required Libraries.
+```{r results='hide', message=FALSE, warning=FALSE, error=FALSE}
+library(knitr)
+library(rprojroot)
+library(raster)
+library(rgdal) 
+library(RColorBrewer)
+library (sp)
+library(dplR) 
+library(moments)  
+library(maptools)
+```
+
+
+2. Change working directory to RStudio Project root. 
+
+
+When using R notebooks, the rootfolder defaults to the notebooks directory. Here we change it to the correct project root directory using the following line of code:
+
+```{r setup, include=FALSE, cache=FALSE}
+#Set root directory to R project root
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+
+
+{r setup} knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+
+----
+
+## Load LiDAR data
+
+1. Load overall height and canopy rasters (they are 1m resolution) and add to a new raster stack
+```{r, cache=TRUE, results = 'hide'}
+kirby_lidar_list <- list.files(path="0_data/external/kirby_LiDAR_20191101/Metrics_1m/overall", pattern = "*tif$", full.names = TRUE)
+kirby_lidar <- raster::stack(kirby_lidar_list)
+```
+
+
+2. Load the 1 m veritcial point count (VPC) mosaics f
+```{r, cache=TRUE}
+lidarVPClist <- list.files(path="0_data/external/kirby_LiDAR_20191101/Metrics_1m/VPC_Mosaics", pattern = "*tif$", full.names = TRUE)
+lidarVPCstack <- raster::stack(lidarVPClist)
+
+lidarVPCstack_mask <- mask(lidarVPCstack, lidarVPCstack > -9999, maskvalue=FALSE)
+```
+
+3. Load the 1 m veritcial point count (VPD) mosaics. Will also need to remove cells with a value of -9999 using the `mask` function. Leaving them in will mess up the summaries generated using `extract`. The other raster stacks don't have -9999 values. 
+```{r, cache=TRUE}
+lidarVPDlist <- list.files(path="0_data/external/kirby_LiDAR_20191101/Metrics_1m/VPD_Mosaics", pattern = "*tif$", full.names = TRUE)
+lidarVPDstack <- raster::stack(lidarVPDlist)
+
+lidarVPDstack_mask <- mask(lidarVPDstack, lidarVPDstack > -9999, maskvalue=FALSE)
+```
+
+----
+
+## Calculate vertical strata metrics 
+
+Using the VPC mosaics, calculated by summing total number of points in each stratum and dividing by the total number of points in all the strata for each grid cell. The results are saved as new tif files. Used arith-methods in the raster package (https://www.rdocumentation.org/packages/raster/versions/1.0.0-1/topics/Arith-methods).
+
+```{r, cache=TRUE}
+strata_00_to_02_returnProportion<- sum(lidarVPCstack[[1]], lidarVPCstack[[2]])/sum(lidarVPCstack) 
+strata_02_to_04_returnProportion<- sum(lidarVPCstack[[3]], lidarVPCstack[[4]])/sum(lidarVPCstack) 
+strata_04_to_06_returnProportion<- sum(lidarVPCstack[[5]], lidarVPCstack[[6]])/sum(lidarVPCstack) 
+strata_06_to_08_returnProportion<- sum(lidarVPCstack[[7]], lidarVPCstack[[8]])/sum(lidarVPCstack) 
+strata_08_to_10_returnProportion<- sum(lidarVPCstack[[9]], lidarVPCstack[[10]])/sum(lidarVPCstack) 
+strata_10_to_15_returnProportion<- sum(lidarVPCstack[[11]], lidarVPCstack[[12]], lidarVPCstack[[13]], lidarVPCstack[[14]], lidarVPCstack[[15]])/sum(lidarVPCstack) 
+strata_15_to_20_returnProportion<- sum(lidarVPCstack[[16]], lidarVPCstack[[17]], lidarVPCstack[[18]], lidarVPCstack[[19]], lidarVPCstack[[20]])/sum(lidarVPCstack) 
+strata_20_above_returnProportion<-lidarVPCstack[[21]]/sum(lidarVPCstack) 
+
+#plot.
+plot(strata_00_to_02_returnProportion)
+plot(strata_02_to_04_returnProportion)
+plot(strata_04_to_06_returnProportion)
+plot(strata_06_to_08_returnProportion)
+plot(strata_08_to_10_returnProportion)
+plot(strata_10_to_15_returnProportion)
+plot(strata_15_to_20_returnProportion)
+plot(strata_20_above_returnProportion)
+
+#save as .tif files.
+writeRaster(strata_00_to_02_returnProportion, filename = "0_data/manual/lidar/strata/strata_00_to_02_returnProportion.tif", overwrite=TRUE)
+writeRaster(strata_02_to_04_returnProportion, filename = "0_data/manual/lidar/strata/strata_02_to_04_returnProportion.tif", overwrite=TRUE)
+writeRaster(strata_04_to_06_returnProportion, filename = "0_data/manual/lidar/strata/strata_04_to_06_returnProportion.tif", overwrite=TRUE)
+writeRaster(strata_06_to_08_returnProportion, filename = "0_data/manual/lidar/strata/strata_06_to_08_returnProportion.tif", overwrite=TRUE)
+writeRaster(strata_08_to_10_returnProportion, filename = "0_data/manual/lidar/strata/strata_08_to_10_returnProportion.tif", overwrite=TRUE)
+writeRaster(strata_10_to_15_returnProportion, filename = "0_data/manual/lidar/strata/strata_10_to_15_returnProportion.tif", overwrite=TRUE)
+writeRaster(strata_15_to_20_returnProportion, filename = "0_data/manual/lidar/strata/strata_15_to_20_returnProportion.tif", overwrite=TRUE)
+writeRaster(strata_20_above_returnProportion, filename = "0_data/manual/lidar/strata/strata_20_above_returnProportion.tif", overwrite=TRUE)
+```
+
+Add the new LiDAR stata rasters to a new raster stack.
+    
+```{r, cache=TRUE}
+strata_returnProportion_list <- list.files(path="0_data/manual/lidar/strata", pattern = "*tif$", full.names = TRUE)
+strata_returnProportion <- raster::stack(strata_returnProportion_list)
+```
+    
+    
+------
+
+
+## Load station locations
+
+We will create buffers around the locations and use to generate lidar summaries at various spatial scales. 
+
+1. **Get XY data for stations**
+    
+    1. Read in a csv that has all of the XY data for the stations
+    2. Use the coordinates function to set the spatial coordinates for the stations data frame.
+    3. Save as spatial data frame
+   
+```{r, cache=TRUE}
+#1   
+BG15_XY <- read.csv("0_data/external/BG15_xy.csv", header=TRUE)
+
+#2
+coordinates(BG15_XY) <- c("EASTING", "NORTHING")
+
+#3
+BG15_XY<-as(BG15_XY,"SpatialPointsDataFrame")
+```
+
+2. **Define Spatial projection of coordinates**
+
+    1. Define the coordinate system (need to specify this first before projecting to the same coordinates of the raster you want to extract)
+    2. Convert to a coordinate system that matches that of the LiDAR rasters.
+
+```{r, cache=TRUE, results = 'hide'}
+#1
+LCC <- CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs") #define spatial projection
+proj4string(BG15_XY) <- LCC#CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+
+#2
+BG15_XY<-spTransform(BG15_XY, crs(kirby_lidar))
+```
+
+3. **Remove nonintersecting stations**
+
+    1. Remove stations that dont intersect with LiDAR coverage. These will be discarded from the analyses. 
+    2. plot the points on the first LiDAR raster in a raster stack
+    3. plot the points on every LiDAR raster in the stack by creating a function and passing it to the addfun argument.
+
+    
+
+```{r, cache=TRUE}
+#1
+BG15_XY_c<-intersect(BG15_XY,strata_returnProportion[[1]])
+
+plot(BG15_XY_c, pch=20)
+pointLabel(coordinates(BG15_XY_c),labels=BG15_XY_c$SS, cex=.25)
+
+# will also exclude BG_15_5 since it doesn't overlap much with the LiDAR
+BG15_XY_c<-BG15_XY_c[-c(40),]
+plot(BG15_XY_c, pch=20)
+pointLabel(coordinates(BG15_XY_c),labels=BG15_XY_c$SS, cex=.25)
+
+#2
+
+plot(strata_returnProportion[[1]], main=strata_returnProportion_list[[1]])
+plot(BG15_XY, add=T, pch=20)
+
+plot(lidarVPDstack[[2]], main=lidarVPDstack[[2]])
+plot(BG15_XY, add=T, pch=20)
+pointLabel(coordinates(BG15_XY),labels=BG15_XY$SS, cex=.25)
+
+
+#3
+
+#fun <- function() {plot(BG15_XY, add = TRUE, col = "black", pch = 3)}
+#plot(lidarVPCstack, addfun = fun, nc = 2, nr = 3)  
+
+```
+
+4. Save station locations as an ESRI shape file using the `writeOGR' function.
+```{r, cache=TRUE}
+writeOGR(BG15_XY, dsn="3_output/shapefiles/",layer="BG15_XY",driver="ESRI Shapefile")
+writeOGR(BG15_XY_c, dsn="3_output/shapefiles/",layer="BG15_XY_c",driver="ESRI Shapefile")
+```
+
+----
+
+## Generate LiDAR Metrics at different scales
+
+Summarize mean, sd, and cv for the mean and max height of 1m pixels summarized at 50, 150, and 500m. Summaries are generated using buffers defined around each station location. Summary metrics are by station location.
+
+**1. mean**
+```{r, cache=TRUE}
+lidar_mean_50m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=50, na.rm=TRUE, fun=mean) 
+lidar_mean_50m<-data.frame("mean_MaxHeight"=lidar_mean_50m[,1], "mean_MeanHeight"= lidar_mean_50m[,2], "mean_PercCanopyCoverCut0.1m"=lidar_mean_50m[,3], "mean_PercCanopyCoverCut0.5m"=lidar_mean_50m[,4], "mean_PercCanopyCoverCut1.0m"=lidar_mean_50m[,5], "mean_PercCanopyCoverCut1.5m"=lidar_mean_50m[,6], "mean_PercCanopyDensity"=lidar_mean_50m[,7])
+
+lidar_mean_150m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=150, na.rm=TRUE, fun=mean)
+lidar_mean_150m<-data.frame("mean_MaxHeight"=lidar_mean_150m[,1], "mean_MeanHeight"= lidar_mean_150m[,2], "mean_PercCanopyCoverCut0.1m"=lidar_mean_150m[,3], "mean_PercCanopyCoverCut0.5m"=lidar_mean_150m[,4], "mean_PercCanopyCoverCut1.0m"=lidar_mean_150m[,5], "mean_PercCanopyCoverCut1.5m"=lidar_mean_150m[,6], "mean_PercCanopyDensity"=lidar_mean_150m[,7])
+                               
+lidar_mean_500m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=500, na.rm=TRUE, fun=mean)
+lidar_mean_500m<-data.frame("mean_MaxHeight"=lidar_mean_500m[,1], "mean_MeanHeight"= lidar_mean_500m[,2], "mean_PercCanopyCoverCut0.1m"=lidar_mean_500m[,3], "mean_PercCanopyCoverCut0.5m"=lidar_mean_500m[,4], "mean_PercCanopyCoverCut1.0m"=lidar_mean_500m[,5], "mean_PercCanopyCoverCut1.5m"=lidar_mean_500m[,6], "mean_PercCanopyDensity"=lidar_mean_500m[,7])
+```
+
+**2. sd**
+```{r, cache=TRUE}
+lidar_sd_50m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=50, na.rm=TRUE, fun=sd) 
+lidar_sd_50m<-data.frame("sd_MaxHeight"=lidar_sd_50m[,1], "sd_MeanHeight"= lidar_sd_50m[,2], "sd_PercCanopyCoverCut0.1m"=lidar_sd_50m[,3], "sd_PercCanopyCoverCut0.5m"=lidar_sd_50m[,4], "sd_PercCanopyCoverCut1.0m"=lidar_sd_50m[,5], "sd_PercCanopyCoverCut1.5m"=lidar_sd_50m[,6], "sd_PercCanopyDensity"=lidar_sd_50m[,7])
+
+lidar_sd_150m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=150, na.rm=TRUE, fun=sd)
+lidar_sd_150m<-data.frame("sd_MaxHeight"=lidar_sd_150m[,1], "sd_MeanHeight"= lidar_sd_150m[,2], "sd_PercCanopyCoverCut0.1m"=lidar_sd_150m[,3], "sd_PercCanopyCoverCut0.5m"=lidar_sd_150m[,4], "sd_PercCanopyCoverCut1.0m"=lidar_sd_150m[,5], "sd_PercCanopyCoverCut1.5m"=lidar_sd_150m[,6], "sd_PercCanopyDensity"=lidar_sd_150m[,7])
+                               
+lidar_sd_500m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=500, na.rm=TRUE, fun=sd)
+lidar_sd_500m<-data.frame("sd_MaxHeight"=lidar_sd_500m[,1], "sd_MeanHeight"= lidar_sd_500m[,2], "sd_PercCanopyCoverCut0.1m"=lidar_sd_500m[,3], "sd_PercCanopyCoverCut0.5m"=lidar_sd_500m[,4], "sd_PercCanopyCoverCut1.0m"=lidar_sd_500m[,5], "sd_PercCanopyCoverCut1.5m"=lidar_sd_500m[,6], "sd_PercCanopyDensity"=lidar_sd_500m[,7])
+```
+
+**3. cv**
+```{r, cache=TRUE}
+lidar_cv_50m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=50, na.rm=TRUE, fun=cv) 
+lidar_cv_50m<-data.frame("cv_MaxHeight"=lidar_cv_50m[,1], "cv_MeanHeight"= lidar_cv_50m[,2], "cv_PercCanopyCoverCut0.1m"=lidar_cv_50m[,3], "cv_PercCanopyCoverCut0.5m"=lidar_cv_50m[,4], "cv_PercCanopyCoverCut1.0m"=lidar_cv_50m[,5], "cv_PercCanopyCoverCut1.5m"=lidar_cv_50m[,6], "cv_PercCanopyDensity"=lidar_cv_50m[,7])
+
+lidar_cv_150m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=150, na.rm=TRUE, fun=cv)
+lidar_cv_150m<-data.frame("cv_MaxHeight"=lidar_cv_150m[,1], "cv_MeanHeight"= lidar_cv_150m[,2], "cv_PercCanopyCoverCut0.1m"=lidar_cv_150m[,3], "cv_PercCanopyCoverCut0.5m"=lidar_cv_150m[,4], "cv_PercCanopyCoverCut1.0m"=lidar_cv_150m[,5], "cv_PercCanopyCoverCut1.5m"=lidar_cv_150m[,6], "cv_PercCanopyDensity"=lidar_cv_150m[,7])
+                               
+lidar_cv_500m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=500, na.rm=TRUE, fun=cv)
+lidar_cv_500m<-data.frame("cv_MaxHeight"=lidar_cv_500m[,1], "cv_MeanHeight"= lidar_cv_500m[,2], "cv_PercCanopyCoverCut0.1m"=lidar_cv_500m[,3], "cv_PercCanopyCoverCut0.5m"=lidar_cv_500m[,4], "cv_PercCanopyCoverCut1.0m"=lidar_cv_500m[,5], "cv_PercCanopyCoverCut1.5m"=lidar_cv_500m[,6], "cv_PercCanopyDensity"=lidar_cv_500m[,7])
+```
+
+**4. kurtosis**
+```{r, cache=TRUE}
+lidar_kurtosis_50m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=50, na.rm=TRUE, fun=kurtosis) 
+lidar_kurtosis_50m<-data.frame("kurtosis_MaxHeight"=lidar_kurtosis_50m[,1], "kurtosis_MeanHeight"= lidar_kurtosis_50m[,2], "kurtosis_PercCanopyCoverCut0.1m"=lidar_kurtosis_50m[,3], "kurtosis_PercCanopyCoverCut0.5m"=lidar_kurtosis_50m[,4], "kurtosis_PercCanopyCoverCut1.0m"=lidar_kurtosis_50m[,5], "kurtosis_PercCanopyCoverCut1.5m"=lidar_kurtosis_50m[,6], "kurtosis_PercCanopyDensity"=lidar_kurtosis_50m[,7])
+
+lidar_kurtosis_150m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=150, na.rm=TRUE, fun=kurtosis)
+lidar_kurtosis_150m<-data.frame("kurtosis_MaxHeight"=lidar_kurtosis_150m[,1], "kurtosis_MeanHeight"= lidar_kurtosis_150m[,2], "kurtosis_PercCanopyCoverCut0.1m"=lidar_kurtosis_150m[,3], "kurtosis_PercCanopyCoverCut0.5m"=lidar_kurtosis_150m[,4], "kurtosis_PercCanopyCoverCut1.0m"=lidar_kurtosis_150m[,5], "kurtosis_PercCanopyCoverCut1.5m"=lidar_kurtosis_150m[,6], "kurtosis_PercCanopyDensity"=lidar_kurtosis_150m[,7])
+                               
+lidar_kurtosis_500m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=500, na.rm=TRUE, fun=kurtosis)
+lidar_kurtosis_500m<-data.frame("kurtosis_MaxHeight"=lidar_kurtosis_500m[,1], "kurtosis_MeanHeight"= lidar_kurtosis_500m[,2], "kurtosis_PercCanopyCoverCut0.1m"=lidar_kurtosis_500m[,3], "kurtosis_PercCanopyCoverCut0.5m"=lidar_kurtosis_500m[,4], "kurtosis_PercCanopyCoverCut1.0m"=lidar_kurtosis_500m[,5], "kurtosis_PercCanopyCoverCut1.5m"=lidar_kurtosis_500m[,6], "kurtosis_PercCanopyDensity"=lidar_kurtosis_500m[,7])
+```
+
+**5. skewness**
+```{r, cache=TRUE}
+lidar_skewness_50m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=50, na.rm=TRUE, fun=skewness) 
+lidar_skewness_50m<-data.frame("skewness_MaxHeight"=lidar_skewness_50m[,1], "skewness_MeanHeight"= lidar_skewness_50m[,2], "skewness_PercCanopyCoverCut0.1m"=lidar_skewness_50m[,3], "skewness_PercCanopyCoverCut0.5m"=lidar_skewness_50m[,4], "skewness_PercCanopyCoverCut1.0m"=lidar_skewness_50m[,5], "skewness_PercCanopyCoverCut1.5m"=lidar_skewness_50m[,6], "skewness_PercCanopyDensity"=lidar_skewness_50m[,7])
+
+lidar_skewness_150m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=150, na.rm=TRUE, fun=skewness)
+lidar_skewness_150m<-data.frame("skewness_MaxHeight"=lidar_skewness_150m[,1], "skewness_MeanHeight"= lidar_skewness_150m[,2], "skewness_PercCanopyCoverCut0.1m"=lidar_skewness_150m[,3], "skewness_PercCanopyCoverCut0.5m"=lidar_skewness_150m[,4], "skewness_PercCanopyCoverCut1.0m"=lidar_skewness_150m[,5], "skewness_PercCanopyCoverCut1.5m"=lidar_skewness_150m[,6], "skewness_PercCanopyDensity"=lidar_skewness_150m[,7])
+                               
+lidar_skewness_500m<-raster::extract(kirby_lidar,BG15_XY_c,buffer=500, na.rm=TRUE, fun=skewness)
+lidar_skewness_500m<-data.frame("skewness_MaxHeight"=lidar_skewness_500m[,1], "skewness_MeanHeight"= lidar_skewness_500m[,2], "skewness_PercCanopyCoverCut0.1m"=lidar_skewness_500m[,3], "skewness_PercCanopyCoverCut0.5m"=lidar_skewness_500m[,4], "skewness_PercCanopyCoverCut1.0m"=lidar_skewness_500m[,5], "skewness_PercCanopyCoverCut1.5m"=lidar_skewness_500m[,6], "skewness_PercCanopyDensity"=lidar_skewness_500m[,7])
+```
+
+**6. Summarize strata metrics **
+
+Bins
+#```{r, cache=TRUE}
+strata_returnProportion_50m<-raster::extract(strata_returnProportion,BG15_XY_c,buffer=50, na.rm=TRUE, fun=mean) 
+strata_returnProportion_150m<-raster::extract(strata_returnProportion,BG15_XY_c,buffer=150, na.rm=TRUE, fun=mean) 
+strata_returnProportion_500m<-raster::extract(strata_returnProportion,BG15_XY_c,buffer=500, na.rm=TRUE, fun=mean) 
+#```
+
+VPC mean
+```{r, cache=TRUE}
+VPC_mean_50m<-raster::extract(lidarVPCstack_mask,BG15_XY,buffer=50, na.rm=TRUE, fun=mean) 
+VPC_mean_50m<-data.frame("SS"=BG15_XY$SS, VPC_mean_50m)
+VPC_mean_150m<-raster::extract(lidarVPCstack_mask,BG15_XY,buffer=150, na.rm=TRUE, fun=mean) 
+VPC_mean_150m<-data.frame("SS"=BG15_XY$SS, VPC_mean_150m)
+VPC_mean_500m<-raster::extract(lidarVPCstack_mask,BG15_XY,buffer=500,fun=mean, na.rm=TRUE) 
+VPC_mean_500m<-data.frame("SS"=BG15_XY$SS, VPC_mean_500m)
+```
+
+VPC sd
+```{r, cache=TRUE}
+VPC_sd_50m<-raster::extract(lidarVPCstack_mask,BG15_XY,buffer=50, na.rm=TRUE, fun=sd) 
+VPC_sd_50m<-data.frame("SS"=BG15_XY$SS, VPC_sd_50m)
+VPC_sd_150m<-raster::extract(lidarVPCstack_mask,BG15_XY,buffer=150, na.rm=TRUE, fun=sd) 
+VPC_sd_150m<-data.frame("SS"=BG15_XY$SS, VPC_sd_150m)
+VPC_sd_500m<-raster::extract(lidarVPCstack_mask,BG15_XY,buffer=500, na.rm=TRUE, fun=sd) 
+VPC_sd_500m<-data.frame("SS"=BG15_XY$SS, VPC_sd_500m)
+```
+
+
+
+VPD mean
+```{r, cache=TRUE}
+
+VPD_mean_50m<-raster::extract(lidarVPDstack_mask, BG15_XY,buffer=50, na.rm=TRUE, fun=mean) 
+VPD_mean_50m<-data.frame("SS"=BG15_XY$SS, VPD_mean_50m)
+
+
+#VPD_mean_150m<-raster::extract(lidarVPDstack,BG15_XY_c,buffer=150, na.rm=TRUE, fun=mean) 
+#VPD_mean_150m<-data.frame("SS"=BG15_XY_c$SS, VPD_mean_150m)
+
+VPD_mean_150m<-raster::extract(lidarVPDstack_mask, BG15_XY,buffer=150, na.rm=TRUE, fun=mean) 
+VPD_mean_150m<-data.frame("SS"=BG15_XY$SS, VPD_mean_150m)
+
+
+VPD_mean_500m<-raster::extract(lidarVPDstack_mask, BG15_XY,buffer=500, na.rm=TRUE, fun=mean) 
+VPD_mean_500m<-data.frame("SS"=BG15_XY$SS, VPD_mean_500m)
+
+#VPD_mean_150m<-raster::extract(mask(lidarVPDstack, lidarVPDstack > -9999, maskvalue=FALSE),BG15_XY_c,buffer=150, na.rm=TRUE, fun=mean) 
+#VPD_mean_150m<-data.frame("SS"=BG15_XY_c$SS, VPD_mean_150m)
+
+
+#VPD_mean_500m<-raster::extract(lidarVPΩstack,BG15_XY,buffer=500, na.rm=TRUE, fun=mean) 
+#VPD_mean_500m<-data.frame("SS"=BG15_XY$SS, VPD_mean_500m)
+```
+
+VPD sd
+```{r, cache=TRUE}
+VPD_sd_50m<-raster::extract(lidarVPDstack_mask,BG15_XY,buffer=50, na.rm=TRUE, fun=sd)
+VPD_sd_50m<-data.frame("SS"=BG15_XY$SS, VPD_sd_50m)
+VPD_sd_150m<-raster::extract(lidarVPDstack_mask,BG15_XY,buffer=150, na.rm=TRUE, fun=sd) 
+VPD_sd_150m<-data.frame("SS"=BG15_XY$SS, VPD_sd_150m)
+VPD_sd_500m<-raster::extract(lidarVPDstack_mask,BG15_XY,buffer=500, na.rm=TRUE, fun=sd) 
+VPD_sd_500m<-data.frame("SS"=BG15_XY$SS, VPD_sd_500m)
+```
+
+```{r}
+write.csv(VPC_mean_50m, file = "0_data/manual/lidar/VPC_mean_50m.csv")
+write.csv(VPC_sd_50m, file = "0_data/manual/lidar/VPC_sd_50m.csv")
+write.csv(VPD_mean_50m, file = "0_data/manual/lidar/VPD_mean_50m.csv")
+write.csv(VPD_sd_50m, file = "0_data/manual/lidar/VPD_sd_50m.csv")
+
+write.csv(VPC_mean_150m, file = "0_data/manual/lidar/VPC_mean_150m.csv")
+write.csv(VPC_sd_150m, file = "0_data/manual/lidar/VPC_sd_150m.csv")
+write.csv(VPD_mean_150m, file = "0_data/manual/lidar/VPD_mean_150m.csv")
+write.csv(VPD_sd_150m, file = "0_data/manual/lidar/VPD_sd_150m.csv")
+
+write.csv(VPC_mean_500m, file = "0_data/manual/lidar/VPC_mean_500m.csv")
+write.csv(VPC_sd_500m, file = "0_data/manual/lidar/VPC_sd_500.csv")
+write.csv(VPD_mean_500m, file = "0_data/manual/lidar/VPD_mean_500m.csv")
+write.csv(VPD_sd_500m, file = "0_data/manual/lidar/VPD_sd_500m.csv")
+```
+
+
+**7. Scale data **
+
+Rescale continuos habitat covariates to standardize variables and improve model fitting. Chooose between the scale and robustscale functions. Robustscale uses the median and mad (not as sensitive too outliers) whereas the scale function uses the mean and standard deviation. Turn off centering in the ``scale`` function: ``center=FALSE``.
+
+
+```{r, cache=TRUE}
+##scale using the scale function.
+## 50 m
+# Combine liDAR metrics inbro a single data frame
+site_lidar_cov_50m_scaled<-data.frame(lidar_mean_50m, lidar_sd_50m, lidar_cv_50m, lidar_kurtosis_50m, lidar_skewness_50m, strata_returnProportion_50m)
+# Scale the metrics
+site_lidar_cov_50m_scaled<-scale(site_lidar_cov_50m_scaled, center=FALSE, scale=TRUE)
+# add station names to the data frame
+site_lidar_cov_50m_scaled<-data.frame("SS"=BG15_XY_c$SS, site_lidar_cov_50m_scaled)
+
+## 150 m
+site_lidar_cov_150m_scaled<-data.frame(lidar_mean_150m, lidar_sd_150m, lidar_cv_150m, lidar_kurtosis_150m, lidar_skewness_150m, strata_returnProportion_150m)
+site_lidar_cov_150m_scaled<-scale(site_lidar_cov_150m_scaled, center=FALSE, scale=TRUE)
+site_lidar_cov_150m_scaled<-data.frame("SS"=BG15_XY_c$SS, site_lidar_cov_150m_scaled)
+    
+## 500 m
+site_lidar_cov_500m_scaled<-data.frame(lidar_mean_500m, lidar_sd_500m, lidar_cv_500m, lidar_kurtosis_500m, lidar_skewness_500m, strata_returnProportion_500m)
+site_lidar_cov_500m_scaled<-scale(site_lidar_cov_500m_scaled, center=FALSE, scale=TRUE)
+site_lidar_cov_500m_scaled<-data.frame("SS"=BG15_XY_c$SS, site_lidar_cov_500m_scaled)
+    
+##or scale using robustscale function
+#site_cov_rscale<-robustscale(site_cov, center = TRUE, scale = TRUE)
+##apply to scaled data to new data frame
+#site_cov_rscale<-as.data.frame(site_cov_rscale$data)
+
+```
+
+------
+
+## Save and Export
+
+1. **Create dataframes with LiDAR covariates**
+
+    Add unscaled metrics to covairate dataframes by the scale of summaries. One data frame for each buffer size.
+```{r, cache=TRUE}
+site_lidar_cov_50m<-data.frame("SS"=BG15_XY_c$SS, lidar_mean_50m, lidar_sd_50m, lidar_cv_50m, lidar_kurtosis_50m, lidar_skewness_50m, strata_returnProportion_50m)
+site_lidar_cov_150m<-data.frame("SS"=BG15_XY_c$SS, lidar_mean_150m, lidar_sd_150m, lidar_cv_150m, lidar_kurtosis_150m, lidar_skewness_150m, strata_returnProportion_150m)
+site_lidar_cov_500m<-data.frame("SS"=BG15_XY_c$SS, lidar_mean_500m, lidar_sd_500m, lidar_cv_500m, lidar_kurtosis_500m, lidar_skewness_500m, strata_returnProportion_500m)
+```
+
+
+2. **export LiDAR unscaled summaries to .csv format**
+```{r, cache=TRUE}
+write.csv(site_lidar_cov_50m, file = "0_data/manual/lidar/site_lidar_cov_50m.csv")
+write.csv(site_lidar_cov_150m, file = "0_data/manual/lidar/site_lidar_cov_150m.csv")
+write.csv(site_lidar_cov_500m, file = "0_data/manual/lidar/site_lidar_cov_500m.csv")
+```
+
+3. **export scaled LiDAR metrics to .csv format**
+```{r, cache=TRUE}
+write.csv(site_lidar_cov_50m_scaled, file = "0_data/manual/lidar/site_lidar_cov_50m_scaled.csv")
+write.csv(site_lidar_cov_150m_scaled, file = "0_data/manual/lidar/site_lidar_cov_150m_scaled.csv")
+write.csv(site_lidar_cov_500m_scaled, file = "0_data/manual/lidar/site_lidar_cov_500m_scaled.csv")
+```
+
+
+4. **Save data frames**
+
+Save the data frames generated in this script as a single, Rdata file for easy use in future steps.
+
+```{r, cache=TRUE}
+save(site_lidar_cov_50m, site_lidar_cov_150m, site_lidar_cov_500m, site_lidar_cov_50m_scaled, site_lidar_cov_150m_scaled, site_lidar_cov_500m_scaled, BG15_XY_c, file= "2_pipeline/store/1_caculatingMetrics.RData")
+```
+
+--------
+
+
+
+

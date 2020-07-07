@@ -1,0 +1,1711 @@
+library(png)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(cowplot)
+library(lubridate)
+library(unmarked)
+library(MuMIn)
+library(jpeg)
+library(ggplot2)
+library(grDevices)
+library(dplyr)
+library(stringr)
+library(spdep)
+library(rgdal)
+library(tmap)
+library(raster)
+library(gstat) # Use gstat's idw routine
+library(sp)    # Used for the spsample function
+
+kirby <- raster("composite markdown/0_data/raw/Kirby_CWD_Vol.tif")
+
+Kirby.coord<-read.csv("composite markdown/0_data/raw/Kirby.coord.csv")
+LCC <- CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs")
+coordinates(Kirby.coord) <- Kirby.coord[,c("EASTING", "NORTHING")] 
+proj4string(Kirby.coord) <- LCC
+
+names<-c("ALFL")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI500m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat500
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite50m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat50
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+names<-c("AMRO")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI500m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat500
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite500m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat500
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+names<-c("BOCH")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI50m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat50
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite500m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat500
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+names<-c("CEDW")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI150m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat150
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite150m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat150
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+
+names<-c("CHSP")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI50m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat50
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite500m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat500
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+
+names<-c("COYE")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI50m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat50
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite500m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat500
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+
+names<-c("DEJU")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI150m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat150
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite50m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat50
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+
+names<-c("GRAJ")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI150m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat150
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite50m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat50
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR500m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat500
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+
+names<-c("HETH")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI150m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat150
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite500m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat500
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR500m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat500
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+
+names<-c("LCSP")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI150m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat150
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite50m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat50
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+
+names<-c("LISP")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI150m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat150
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite150m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat150
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+
+names<-c("OSFL")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI500m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat500
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite500m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat500
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR500m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat500
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+
+names<-c("OVEN")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI500m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat500
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite500m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat500
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+names<-c("PAWA")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI150m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat150
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite500m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat500
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR500m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat500
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+names<-c("REVI")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI500m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat500
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite500m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat500
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR500m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat500
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+names<-c("RCKI")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI150m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat150
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite500m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat500
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+names<-c("SWTH")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI500m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat500
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite150m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat150
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR500m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat500
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+names<-c("SWSP")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI150m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat150
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite150m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat150
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+
+names<-c("TEWA")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI500m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat500
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite500m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat500
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+names<-c("WIWR")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI500m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat500
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite500m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat500
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR500m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat500
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+names<-c("WTSP")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI500m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat500
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite500m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat500
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+names<-c("YRWA")
+for (i in names){
+  AVIpred<-read.csv(paste0("AVI analyses/3_outputs/data/PredictedAbundanceAVI50m",i,".csv"),header=TRUE)
+  AVIpred$lam.hatAVI<-AVIpred$lam.hat50
+  Satpred<-read.csv(paste0("Beaudoin analyses/3_outputs/data/PredictedAbundanceSatellite50m",i,".csv"),header=TRUE)
+  Satpred$lam.hatSat<-Satpred$lam.hat50
+  Lidarpred<-read.csv(paste0("Lidar analyses/3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"),header=TRUE)
+  Lidarpred$lam.hatLidar<-Lidarpred$lam.hat150
+  m1<-merge(AVIpred,Satpred,by=c("SS"))
+  str(m1)
+  m2<-merge(m1,Lidarpred,by=c("SS"))
+  str(m2)
+  m2$lam.hatAVG<-(m2$lam.hatAVI+m2$lam.hatLidar+m2$lam.hatSat)/3
+  stationdata_sp <- merge(Kirby.coord, m2, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hatAVG ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n mean abundance \n (top AVI,satellite,lidar)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG, width = 1000, height = 1000, units="px", filename = paste0("composite markdown/2_outputs/maps/MeanPredicted",i,"FromTopModels.png"))
+}
+
+#ALFL-AMRO-BOCH-CEDW
+img1 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedALFL.png")), interpolate = FALSE)
+img2 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedALFLFromTopModels.png")), interpolate = FALSE)
+img3 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedAMRO.png")), interpolate = FALSE)
+img4 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedAMROFromTopModels.png")), interpolate = FALSE)
+img5 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedBOCH.png")), interpolate = FALSE)
+img6 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedBOCHFromTopModels.png")), interpolate = FALSE)
+img7 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedCEDW.png")), interpolate = FALSE)
+img8 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedCEDWFromTopModels.png")), interpolate = FALSE)
+
+P1<-plot_grid(img1, img2, img3, img4, img5, img6, img7, img8,
+              align = "h", nrow=4, ncol = 2, rel_widths = c(1/2, 1/2), labels = "AUTO")
+ggsave("composite markdown/2_outputs/MeanVSComposite/PNGplot_ALFL2CEDW.png", plot=P1, width=10, height=13, units=c("in"), dpi=300)
+
+
+#CHSP-COYE-DEJU-GRAJ
+img1 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedCHSP.png")), interpolate = FALSE)
+img2 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedCHSPFromTopModels.png")), interpolate = FALSE)
+img3 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedCOYE.png")), interpolate = FALSE)
+img4 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedCOYEFromTopModels.png")), interpolate = FALSE)
+img5 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedDEJU.png")), interpolate = FALSE)
+img6 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedDEJUFromTopModels.png")), interpolate = FALSE)
+img7 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedGRAJ.png")), interpolate = FALSE)
+img8 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedGRAJFromTopModels.png")), interpolate = FALSE)
+
+P1<-plot_grid(img1, img2, img3, img4, img5, img6, img7, img8,
+              align = "h", nrow=4, ncol = 2, rel_widths = c(1/2, 1/2), labels = "AUTO")
+ggsave("composite markdown/2_outputs/MeanVSComposite/PNGplot_CHSP2GRAJ.png", plot=P1, width=10, height=13, units=c("in"), dpi=300)
+
+
+#HETH-LCSP-OSFL-PAWA
+img1 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedHETH.png")), interpolate = FALSE)
+img2 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedHETHFromTopModels.png")), interpolate = FALSE)
+img3 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedLCSP.png")), interpolate = FALSE)
+img4 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedLCSPFromTopModels.png")), interpolate = FALSE)
+img5 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedOSFL.png")), interpolate = FALSE)
+img6 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedOSFLFromTopModels.png")), interpolate = FALSE)
+img7 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedPAWA.png")), interpolate = FALSE)
+img8 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedPAWAFromTopModels.png")), interpolate = FALSE)
+
+P1<-plot_grid(img1, img2, img3, img4, img5, img6, img7, img8,
+              align = "h", nrow=4, ncol = 2, rel_widths = c(1/2, 1/2), labels = "AUTO")
+ggsave("composite markdown/2_outputs/MeanVSComposite/PNGplot_HETH2PAWA.png", plot=P1, width=10, height=13, units=c("in"), dpi=300)
+
+
+#REVI-RCKI-SWSP-TEWA
+img1 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedREVI.png")), interpolate = FALSE)
+img2 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedREVIFromTopModels.png")), interpolate = FALSE)
+img3 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedRCKI.png")), interpolate = FALSE)
+img4 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedRCKIFromTopModels.png")), interpolate = FALSE)
+img5 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedSWSP.png")), interpolate = FALSE)
+img6 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedSWSPFromTopModels.png")), interpolate = FALSE)
+img7 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedTEWA.png")), interpolate = FALSE)
+img8 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedTEWAFromTopModels.png")), interpolate = FALSE)
+
+P1<-plot_grid(img1, img2, img3, img4, img5, img6, img7, img8,
+              align = "h", nrow=4, ncol = 2, rel_widths = c(1/2, 1/2), labels = "AUTO")
+ggsave("composite markdown/2_outputs/MeanVSComposite/PNGplot_REVI2TEWA.png", plot=P1, width=10, height=13, units=c("in"), dpi=300)
+
+#WTSP-YRWA
+img1 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedWTSP.png")), interpolate = FALSE)
+img2 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedWTSPFromTopModels.png")), interpolate = FALSE)
+img3 <-  rasterGrob(as.raster(readPNG("Composite analyses/3_outputs/maps/BestModelPredictedYRWA.png")), interpolate = FALSE)
+img4 <-  rasterGrob(as.raster(readPNG("composite markdown/2_outputs/maps/MeanPredictedYRWAFromTopModels.png")), interpolate = FALSE)
+
+P1<-plot_grid(img1, img2, img3, img4, img5, img6, img7, img8,
+              align = "h", nrow=2, ncol = 2, rel_widths = c(1/2, 1/2), labels = "AUTO")
+ggsave("composite markdown/2_outputs/MeanVSComposite/PNGplot_WTSP2YRWA.png", plot=P1, width=10, height=7, units=c("in"), dpi=300)

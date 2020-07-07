@@ -1,0 +1,566 @@
+library(lubridate)
+library(unmarked)
+library(MuMIn)
+library(jpeg)
+library(ggplot2)
+library(grDevices)
+library(dplyr)
+library(stringr)
+library(spdep)
+library(rgdal)
+library(tmap)
+library(raster)
+library(gstat) # Use gstat's idw routine
+library(sp)    # Used for the spsample function
+
+kirby <- raster("0_data/raw/Kirby_CWD_Vol.tif")
+
+Kirby.coord<-read.csv("0_data/raw/Kirby.coord.csv")
+LCC <- CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs")
+coordinates(Kirby.coord) <- Kirby.coord[,c("EASTING", "NORTHING")] 
+proj4string(Kirby.coord) <- LCC
+
+my.theme <- theme_classic() +
+  theme(text=element_text(size=16, family="Arial"),
+        axis.text.x=element_text(size=16),
+        axis.text.y=element_text(size=16),
+        axis.title.x=element_text(margin=margin(10,0,0,0)),
+        axis.title.y=element_text(margin=margin(0,10,0,0)),
+        axis.line.x=element_line(linetype=1),
+        axis.line.y=element_line(linetype=1))
+
+my.theme2 <- theme_classic() +
+  theme(text=element_text(size=24, family="Arial"),
+        axis.text.x=element_text(size=24),
+        axis.text.y=element_text(size=24),
+        axis.title.x=element_text(margin=margin(10,0,0,0)),
+        axis.title.y=element_text(margin=margin(0,10,0,0)),
+        axis.line.x=element_line(linetype=1),
+        axis.line.y=element_line(linetype=1))
+
+# Suppose we want to have set of models that exclude combinations of colinear
+# variables, that are significantly (p < 0.05) correlated, with Pearson
+# correlation coefficient equal to or larger than r = 0.7.
+
+#https://github.com/cran/MuMIn/blob/master/demo/dredge.subset.R
+is.correlated <- function(i, j, data, conf.level = .95, cutoff = .69, ...) {
+  if(j >= i) return(NA)
+  ct <- cor.test(data[, i], data[, j], conf.level = conf.level, ...)
+  ct$p.value > (1 - conf.level) || abs(ct$estimate) <= cutoff
+}
+# Need vectorized function to use with 'outer'
+vCorrelated <- Vectorize(is.correlated, c("i", "j"))
+
+
+
+birddata<-read.csv(file="0_data/raw/allvisitsBG15.csv", header=TRUE)      
+str(birddata)
+#make sure the data used doesn't include any stations missing habitat data
+#and is sorted by station the same way as the habitat data and the station
+#location data was when creating the spatial matrix
+
+#Since we are using mixture models, there should be multiple
+#rows (observations) for each station. In contrast to the unmarked
+#package, observation and detection covariate data are in long
+#format rather than wide format, when modelling with the HSDM package
+alldata<-merge(kirbypoints4shp, birddata, by=c("SS"))
+write.csv(alldata, file="0_data/processed/alldata.csv")
+
+alldata<-read.csv("0_data/processed/alldata.csv", header=TRUE)
+
+alldata$MY.DATE1 <- do.call(paste, list(alldata$Month, alldata$Day, alldata$Year))
+alldata$MY.DATE1 <- as.Date(alldata$MY.DATE1, format=c("%m %d %Y"))
+alldata$Julian <- as.numeric(format(alldata$MY.DATE1, "%j"))
+
+#1. output needs to be "recast so that values associated with separate visits to same point count are put in separate columns
+#The same procedure is used for both observations and detection covariates
+names = c("ALFL","AMRO","BOCH","CEDW","CHSP","COYE","DEJU","GCKI","GRAJ",
+          "HETH","Julian","LCSP","LISP","OSFL","OVEN","PAWA","RBNU","RCKI",
+          "REVI","SWSP","SWTH","TEWA","TRES","WIWR","WTSP","YRWA")
+
+alldata$ROUND <- ave(alldata$ALFL_mean, alldata$SS, FUN = seq_along)
+
+for(i in names){ 
+  spp<-alldata[,c(i)]  #Species as variable
+  
+  recasted<-tapply(spp, list(alldata$SS, alldata$ROUND), max)
+  write.csv(recasted, paste0("0_data/processed/unmarked/",i,".csv"))
+}  
+
+#2. site covariates
+site_lidar_cov_50m<-read.csv("0_data/raw/site_lidar_cov_50m.csv",header=TRUE)
+site_lidar_cov_150m<-read.csv("0_data/raw/site_lidar_cov_150m.csv",header=TRUE)
+site_lidar_cov_500m<-read.csv("0_data/raw/site_lidar_cov_500m.csv",header=TRUE)
+VPD_mean_50m<-read.csv("0_data/raw/VPD_mean_50m.csv",header=TRUE)
+VPD_mean_150m<-read.csv("0_data/raw/VPD_mean_150m.csv",header=TRUE)
+VPD_mean_500m<-read.csv("0_data/raw/VPD_mean_500m.csv",header=TRUE)
+VPD_sd_50m<-read.csv("0_data/raw/VPD_sd_50m.csv",header=TRUE)
+VPD_sd_150m<-read.csv("0_data/raw/VPD_sd_150m.csv",header=TRUE)
+VPD_sd_500m<-read.csv("0_data/raw/VPD_sd_500m.csv",header=TRUE)
+
+#sitecov.150<-cbind(site_lidar_cov_150m,VPD_mean_150m,VPD_sd_150m)
+sitecov.150<-merge(site_lidar_cov_150m,VPD_mean_150m,by=c("SS"))
+sitecov.150<-merge(sitecov.150,VPD_sd_150m,by=c("SS"))
+colnames(sitecov.150) <- gsub("1x1m.x", "1x1m.mean", colnames(sitecov.150))
+colnames(sitecov.150) <- gsub("1x1m.y", "1x1m.sd", colnames(sitecov.150))
+write.csv(sitecov.150, file="0_data/processed/unmarked/sitecov.150.csv")
+
+#sitecov.500<-cbind(site_lidar_cov_500m,VPD_mean_500m,VPD_sd_500m)
+sitecov.500<-merge(site_lidar_cov_500m,VPD_mean_500m,by=c("SS"))
+sitecov.500<-merge(sitecov.500,VPD_sd_500m,by=c("SS"))
+colnames(sitecov.500) <- gsub("1x1m.x", "1x1m.mean", colnames(sitecov.500))
+colnames(sitecov.500) <- gsub("1x1m.y", "1x1m.sd", colnames(sitecov.500))
+write.csv(sitecov.500, file="0_data/processed/unmarked/sitecov.500.csv")
+
+Julian<-read.csv("0_data/processed/unmarked/Julian.csv",header=TRUE)
+ObsCov<-list(as.matrix(Julian[,2:5]))
+sitecov.150<-read.csv("0_data/processed/unmarked/sitecov.150.csv",header=TRUE)
+sitecov.500<-read.csv("0_data/processed/unmarked/sitecov.500.csv",header=TRUE)
+#same variable names in both data frames
+
+# Change names of columns 2 to N in sitecov.150
+colnames(sitecov.150)[2:ncol(sitecov.150)] <- paste0("S150.",colnames(sitecov.150)[2:ncol(sitecov.150)])
+names(sitecov.150)
+
+# Change names of columns 2 to N in sitecov.500
+colnames(sitecov.500)[2:ncol(sitecov.500)] <- paste0("S500.",colnames(sitecov.500)[2:ncol(sitecov.500)])
+names(sitecov.500)
+
+site.covs<-merge(sitecov.150,sitecov.500,by=c("SS"))
+str(site.covs)
+write.csv(site.covs, file="0_data/processed/unmarked/Kirby.Lidar.2spatscale.csv")
+
+#4. Check correlations among site covariates
+site.covs.wo.SS<-site.covs[,-1]
+cormat <- round(cor(site.covs.wo.SS),2)
+head(cormat)
+cormat.df<-data.frame(cormat)
+write.csv(cormat.df,file="0_data/processed/cormatdf.csv")
+#so I can only choose 1 variable at a time in models from the VPD covariates due to strong 
+#correlations: strongly + (>0.7) between all VPD means at both 150-m and 500-m scales
+#              strongly - (<-0.7) between all VPD sd variables at both scales
+#              Max height strongly + correlated with mean height and mean canopy density/cover
+#                         strongly + with return proportion in higher height intervals
+#                         strongly - correlated with CV in mean height and skewness in mean height
+#                - correlated (but not extremely) with SD canopy density/cover
+#So I can't combine VPD metrics from different spatial scales in same model
+
+site.covs<-site.covs[,-1]
+
+names = c("ALFL","AMRO","BOCH","CEDW","CHSP","COYE","DEJU","GRAJ",
+          "HETH","LCSP","LISP","OSFL","OVEN","PAWA","RCKI",
+          "REVI","SWSP","SWTH","TEWA","WIWR","WTSP","YRWA")
+#names=c("BOCH","CEDW,"CHSP","DEJU")
+names=c("GRAJ","HETH","LCSP","LISP","OSFL","PAWA","RCKI",
+        "REVI","SWSP","SWTH","TEWA","WIWR","WTSP","YRWA")
+for(i in names){ 
+  birddata<-read.csv(paste0("0_data/processed/unmarked/",i,".csv"),header=TRUE)
+  count=birddata[,2:5]
+  
+  #Now construct unmarkedPCount frame for mixture models
+  umf <- unmarkedFramePCount(y=count, siteCovs=site.covs, 
+                             obsCovs=list(Julian=Julian[,2:5]))# organize data
+  umf                            # take a look
+  summary(umf)   
+  obsCovs(umf) <- scale(obsCovs(umf))
+  siteCovs(umf) <- scale(siteCovs(umf))
+  
+  #parallel processing and using dredge
+  clusterType<-if(length(find.package("snow",
+                                      quiet=TRUE))) "SOCK" else "PSOCK"
+  
+  clust<-try(makeCluster(getOption("cl.cores",4), type=clusterType))
+  clusterEvalQ(clust, library(unmarked))
+  clusterExport(clust, "umf")
+  
+  
+  
+  
+  
+  #Run mixture models
+  
+  #to dredge with parallel processing:
+  
+  ###150-m scale
+  global_pcount150 <-pcount( ~ Julian
+                             ~S150.VPD__50.100cm_Grid.1x1m.mean+
+                               S150.VPD__100.150cm_Grid.1x1m.mean+
+                               S150.VPD__150.200cm_Grid.1x1m.mean+
+                               S150.VPD__2.3m_Grid.1x1m.mean+
+                               S150.VPD__3.4m_Grid.1x1m.mean+
+                               S150.VPD__4.5m_Grid.1x1m.mean+
+                               S150.VPD__5.6m_Grid.1x1m.mean+
+                               S150.VPD__6.7m_Grid.1x1m.mean+
+                               S150.VPD__7.8m_Grid.1x1m.mean+
+                               S150.VPD__8.9m_Grid.1x1m.mean+
+                               S150.VPD__9.10m_Grid.1x1m.mean+
+                               S150.VPD__10.11m_Grid.1x1m.mean+
+                               S150.VPD__11.12m_Grid.1x1m.mean+
+                               # S150.VPD__12.13m_Grid.1x1m.mean+
+                               # S150.VPD__13.14m_Grid.1x1m.mean+
+                               # S150.VPD__14.15m_Grid.1x1m.mean+
+                               # S150.VPD__15.16m_Grid.1x1m.mean+
+                               # S150.VPD__16.17m_Grid.1x1m.mean+
+                               # S150.VPD__17.18m_Grid.1x1m.mean+
+                               # S150.VPD__18.19m_Grid.1x1m.mean+
+                               # S150.VPD__19.20m_Grid.1x1m.mean+
+                               # S150.VPD__Abv20m_Grid.1x1m.mean+
+                               S150.mean_MaxHeight+
+                               S150.sd_PercCanopyDensity,
+                             mixture="P",
+                             data = umf)
+  print(paste0('Global 150-m model run for ',i))
+  
+  site.covs.wo.SS150<-site.covs[,c("S150.VPD__50.100cm_Grid.1x1m.mean",
+                                     "S150.VPD__100.150cm_Grid.1x1m.mean",
+                                     "S150.VPD__150.200cm_Grid.1x1m.mean",
+                                     "S150.VPD__2.3m_Grid.1x1m.mean",
+                                     "S150.VPD__3.4m_Grid.1x1m.mean",
+                                     "S150.VPD__4.5m_Grid.1x1m.mean",
+                                     "S150.VPD__5.6m_Grid.1x1m.mean",
+                                     "S150.VPD__6.7m_Grid.1x1m.mean",
+                                     "S150.VPD__7.8m_Grid.1x1m.mean",
+                                     "S150.VPD__8.9m_Grid.1x1m.mean",
+                                     "S150.VPD__9.10m_Grid.1x1m.mean",
+                                     "S150.VPD__10.11m_Grid.1x1m.mean",
+                                     "S150.VPD__11.12m_Grid.1x1m.mean",
+                                   "S150.mean_MaxHeight",
+                                   "S150.sd_PercCanopyDensity")]
+  
+  # Create logical matrix
+  smat150 <- outer(1:15, 1:15, vCorrelated, data = site.covs.wo.SS150)
+  nm <- colnames(site.covs.wo.SS150)#[-1]
+  dimnames(smat150) <- list(nm, nm)
+  
+  system.time(dredge_pcount150<-pdredge(global_pcount150, 
+                                        subset=smat150,
+                                        rank=AIC, 
+                                        m.lim=c(1,3), 
+                                        cluster=clust))#,fixed=c("p(Julian)")
+  print(paste0('150-m model dredge run for ',i))
+  
+  length(dredge_pcount150)
+  nrow(dredge_pcount150)#638 models
+  bestmodels150<-get.models(dredge_pcount150, subset=delta<4)
+  
+  ms150<-modSel(fitList(fits = structure(bestmodels150, names = model.names(bestmodels150,
+                                                                            labels = getAllTerms(global_pcount150)))))
+  ms.coef<-coef(ms150)
+  ms.SE<-SE(ms150)
+  output150<-as(ms150,"data.frame")
+  write.csv(output150, file=paste0("0_data/processed/unmarked/results/",i,"bestmodels150.csv"))
+  print(paste0('150-m model outputs printed for ',i))
+  
+  #get variables and estimates of their uncertainty from top model 
+  topfinalmodel150<-get.models(dredge_pcount150, subset = 1)[[1]]
+  Estimate<-coef(topfinalmodel150, type='state', altNames = TRUE)
+  SE<-SE(topfinalmodel150, type='state', altNames = TRUE)
+  lam.df<-data.frame(Estimate,SE)
+  lam.df$Predictor<-row.names(lam.df)
+  Estimate<-coef(topfinalmodel150, type='det', altNames = TRUE)
+  SE<-SE(topfinalmodel150, type='det', altNames = TRUE)
+  P.df<-data.frame(Estimate,SE)
+  P.df$Predictor<-row.names(P.df)
+  total.df150<-bind_rows(lam.df,P.df)
+  total.df150$LCL<-total.df150$Estimate-1.96*total.df150$SE
+  total.df150$UCL<-total.df150$Estimate+1.96*total.df150$SE
+  total.df150<-total.df150[,c("Predictor","Estimate","SE","LCL","UCL")]
+  write.csv(total.df150, file=paste0("3_outputs/tables/top150m_model",i,".csv"))
+  
+  #box plot
+  #shorten predictor names
+  total.df150$Predictor<- gsub("_Grid.1x1m.mean", "", total.df150$Predictor) # new descriptor for harvest class in v.2018 cure4insect
+  total.df150$Predictor<- gsub("S150.mean", "", total.df150$Predictor) # new descriptor for harvest class in v.2018 cure4insect
+  total.df150$Predictor<- gsub("S150.", "", total.df150$Predictor) # new descriptor for harvest class in v.2018 cure4insect
+  #total.df150<-total.df150[!total.df150$Predictor=="lam(Int)",]  
+  #total.df150<-total.df150[!total.df150$Predictor=="p(Int)",]  
+  
+  GG<-ggplot(total.df150, aes(x=Predictor, y=Estimate))+
+    geom_point(aes(x=Predictor, y=Estimate))+
+    geom_errorbar(aes(ymin=LCL,ymax=UCL))+
+    geom_hline(yintercept=0)+
+    xlab("Predictor")+
+    ylab(paste0("Effect on lam(",i,") or det(",i,")"))+my.theme+
+    scale_x_discrete(labels = function(x) lapply(strwrap(x, width = 10, simplify = FALSE), paste, collapse="\n"))
+  ggsave(paste0("3_outputs/figures/",i,"top150m_LIDARmodel.png"), plot=GG, width=12, height=6, units=c("in"), dpi=300)
+
+  #get predictions from best model and validate best model
+  umf_val<-umf#same data set set up as an occupancy modelling frame
+  p.hat <- predict(topfinalmodel150, newdata=umf_val, type="det")[,1] 
+  lam.hat <- predict(topfinalmodel150, newdata=umf_val, type="state")[,1]
+  pred.abund<-data.frame(lam.hat)
+  pred.abund$SS<-Kirby.coord$SS
+  
+  
+  stationdata_sp <- merge(Kirby.coord, pred.abund, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hat ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG150<-tm_shape(r) +
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n abundance \n (best LIDAR model)")) +
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE)
+  tmap_save(GG150, width = 1000, height = 1000, units="px", filename = paste0("3_outputs/maps/BestModelLIDAR150mPredicted",i,".png"))
+  df150<-data.frame(stationdata_sp$SS,stationdata_sp$lam.hat)
+  df150$SS<-df150$stationdata_sp.SS
+  df150$stationdata_sp.SS<-NULL
+  df150$lam.hat150<-df150$stationdata_sp.lam.hat
+  df150$stationdata_sp.lam.hat<-NULL
+  write.csv(df150, file=paste0("3_outputs/data/PredictedAbundanceLIDAR150m",i,".csv"))
+  
+  
+  
+  ###500-m scale
+  global_pcount500 <-pcount( ~ Julian
+                             ~S500.VPD__50.100cm_Grid.1x1m.mean+
+                               S500.VPD__100.150cm_Grid.1x1m.mean+
+                               S500.VPD__150.200cm_Grid.1x1m.mean+
+                               S500.VPD__2.3m_Grid.1x1m.mean+
+                               S500.VPD__3.4m_Grid.1x1m.mean+
+                               S500.VPD__4.5m_Grid.1x1m.mean+
+                               S500.VPD__5.6m_Grid.1x1m.mean+
+                               S500.VPD__6.7m_Grid.1x1m.mean+
+                               S500.VPD__7.8m_Grid.1x1m.mean+
+                               S500.VPD__8.9m_Grid.1x1m.mean+
+                               S500.VPD__9.10m_Grid.1x1m.mean+
+                               S500.VPD__10.11m_Grid.1x1m.mean+
+                               S500.VPD__11.12m_Grid.1x1m.mean+
+                               # S500.VPD__12.13m_Grid.1x1m.mean+
+                               # S500.VPD__13.14m_Grid.1x1m.mean+
+                               # S500.VPD__14.15m_Grid.1x1m.mean+
+                               # S500.VPD__15.16m_Grid.1x1m.mean+
+                               # S500.VPD__16.17m_Grid.1x1m.mean+
+                               # S500.VPD__17.18m_Grid.1x1m.mean+
+                               # S500.VPD__18.19m_Grid.1x1m.mean+
+                               # S500.VPD__19.20m_Grid.1x1m.mean+
+                               # S500.VPD__Abv20m_Grid.1x1m.mean+
+                               S500.mean_MaxHeight+
+                               S500.sd_PercCanopyDensity,
+                             mixture="P",
+                             data = umf)
+  print(paste0('Global 500-m model run for ',i))
+  
+  site.covs.wo.SS500<-site.covs[,c("S500.VPD__50.100cm_Grid.1x1m.mean",
+                                   "S500.VPD__100.150cm_Grid.1x1m.mean",
+                                   "S500.VPD__150.200cm_Grid.1x1m.mean",
+                                   "S500.VPD__2.3m_Grid.1x1m.mean",
+                                   "S500.VPD__3.4m_Grid.1x1m.mean",
+                                   "S500.VPD__4.5m_Grid.1x1m.mean",
+                                   "S500.VPD__5.6m_Grid.1x1m.mean",
+                                   "S500.VPD__6.7m_Grid.1x1m.mean",
+                                   "S500.VPD__7.8m_Grid.1x1m.mean",
+                                   "S500.VPD__8.9m_Grid.1x1m.mean",
+                                   "S500.VPD__9.10m_Grid.1x1m.mean",
+                                   "S500.VPD__10.11m_Grid.1x1m.mean",
+                                   "S500.VPD__11.12m_Grid.1x1m.mean",
+                                   "S500.mean_MaxHeight",
+                                   "S500.sd_PercCanopyDensity")]
+  
+  
+  
+  # Create logical matrix
+  smat500 <- outer(1:15, 1:15, vCorrelated, data = site.covs.wo.SS500)
+  nm <- colnames(site.covs.wo.SS500)#[-1]
+  dimnames(smat500) <- list(nm, nm)
+  
+  system.time(dredge_pcount500<-pdredge(global_pcount500, 
+                                        subset=smat500,
+                                        rank=AIC, 
+                                        m.lim=c(1,3), 
+                                        cluster=clust))#,fixed=c("p(Julian)")
+  print(paste0('500-m model dredge run for ',i))
+  
+  length(dredge_pcount500)
+  nrow(dredge_pcount500)#638 models
+  bestmodels500<-get.models(dredge_pcount500, subset=delta<4)
+  
+  ms500<-modSel(fitList(fits = structure(bestmodels500, names = model.names(bestmodels500,
+                                                                            labels = getAllTerms(global_pcount500)))))
+  ms.coef<-coef(ms500)
+  ms.SE<-SE(ms500)
+  output500<-as(ms500,"data.frame")
+  write.csv(output500, file=paste0("0_data/processed/unmarked/results/",i,"bestmodels500.csv"))
+  print(paste0('500-m model outputs printed for ',i))
+  
+  #get variables and estimates of their uncertainty from top model 
+  topfinalmodel500<-get.models(dredge_pcount500, subset = 1)[[1]]
+  Estimate<-coef(topfinalmodel500, type='state', altNames = TRUE)
+  SE<-SE(topfinalmodel500, type='state', altNames = TRUE)
+  lam.df<-data.frame(Estimate,SE)
+  lam.df$Predictor<-row.names(lam.df)
+  Estimate<-coef(topfinalmodel500, type='det', altNames = TRUE)
+  SE<-SE(topfinalmodel500, type='det', altNames = TRUE)
+  P.df<-data.frame(Estimate,SE)
+  P.df$Predictor<-row.names(P.df)
+  total.df500<-bind_rows(lam.df,P.df)
+  total.df500$LCL<-total.df500$Estimate-1.96*total.df500$SE
+  total.df500$UCL<-total.df500$Estimate+1.96*total.df500$SE
+  total.df500<-total.df500[,c("Predictor","Estimate","SE","LCL","UCL")]
+  write.csv(total.df500, file=paste0("3_outputs/tables/top500m_model",i,".csv"))
+  
+  #box plot
+  #shorten predictor names
+  total.df500$Predictor<- gsub("_Grid.1x1m.mean", "", total.df500$Predictor) # new descriptor for harvest class in v.2018 cure4insect
+  total.df500$Predictor<- gsub("S500.mean", "", total.df500$Predictor) # new descriptor for harvest class in v.2018 cure4insect
+  total.df500$Predictor<- gsub("S500.", "", total.df500$Predictor) # new descriptor for harvest class in v.2018 cure4insect
+  #total.df500<-total.df500[!total.df500$Predictor=="lam(Int)",]  
+  #total.df500<-total.df500[!total.df500$Predictor=="p(Int)",]  
+  
+  GG<-ggplot(total.df500, aes(x=Predictor, y=Estimate))+
+    geom_point(aes(x=Predictor, y=Estimate))+
+    geom_errorbar(aes(ymin=LCL,ymax=UCL))+
+    geom_hline(yintercept=0)+
+    xlab("Predictor")+
+    ylab(paste0("Effect on lam(",i,") or det(",i,")"))+my.theme+
+    scale_x_discrete(labels = function(x) lapply(strwrap(x, width = 10, simplify = FALSE), paste, collapse="\n"))
+  ggsave(paste0("3_outputs/figures/",i,"top500m_LIDARmodel.png"), plot=GG, width=12, height=6, units=c("in"), dpi=300)
+
+  #get predictions from best model and validate best model
+  umf_val<-umf#same data set set up as an occupancy modelling frame
+  p.hat <- predict(topfinalmodel500, newdata=umf_val, type="det")[,1] 
+  lam.hat <- predict(topfinalmodel500, newdata=umf_val, type="state")[,1]
+  pred.abund<-data.frame(lam.hat)
+  pred.abund$SS<-Kirby.coord$SS
+  
+  
+  stationdata_sp <- merge(Kirby.coord, pred.abund, by.x = "SS", by.y = "SS")
+  str(stationdata_sp)
+  #plot(stationdata_sp, col=stationdata_sp$lam.hat)
+  stationdata_sp@bbox
+  stationdata_sp@coords
+  
+  #plot(kirby)
+  #Create a function to generate a continuous color palette
+  rbPal <- colorRampPalette(c('red','green'))
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  
+  # Replace point boundary extent with that of Kirby grid
+  coords = matrix(c(488000, 6131500,
+                    488000, 6137500,
+                    496000, 6137500,
+                    496000, 6131500,
+                    488000, 6131500), 
+                  ncol = 2, byrow = TRUE)
+  
+  
+  P1 = Polygon(coords)
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = "a")), proj4string=CRS("+proj=utm +zone=12 +ellps=GRS80 +units=m +no_defs"))
+  #plot(Ps1, axes = TRUE)
+  #plot(stationdata_sp, add=TRUE, pch=20, col=rbPal(10)[as.numeric(cut(stationdata_sp$lam.hat, breaks = 10))])
+  stationdata_sp@bbox<-Ps1@bbox
+  
+  # tm_shape(Ps1) + tm_polygons() +
+  #   tm_shape(stationdata_sp) +
+  #   tm_dots(col="lam.hat", palette = "RdBu", auto.palette.mapping = FALSE,
+  #           title=paste0("Predicted ",i," abund \n(per station)"), size=0.7) +
+  #   tm_legend(legend.outside=TRUE)
+  
+  #IDW Interpolation
+  
+  # Create an empty grid where n is the total number of cells
+  grd              <- as.data.frame(spsample(stationdata_sp, "regular", n=50000))
+  names(grd)       <- c("EASTING", "NORTHING")
+  coordinates(grd) <- c("EASTING", "NORTHING")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+  
+  # Add P's projection information to the empty grid
+  proj4string(grd) <- proj4string(stationdata_sp)
+  
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  P.idw <- gstat::idw(lam.hat ~ 1, stationdata_sp, newdata=grd, idp=2.0)
+  
+  # Convert to raster object 
+  r <- raster(P.idw)
+  #plot(r)
+  
+  # Plot
+  GG500<-tm_shape(r) + 
+    tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+              title=paste0("Predicted ",i," \n abundance \n (best LIDAR model)")) + 
+    tm_shape(stationdata_sp) + tm_dots(size=0.2) +
+    tm_legend(legend.outside=TRUE) 
+  tmap_save(GG500, width = 1000, height = 1000, units="px", filename = paste0("3_outputs/maps/BestModel500mLIDARPredicted",i,".png"))
+  df500<-data.frame(stationdata_sp$SS,stationdata_sp$lam.hat)
+  df500$SS<-df500$stationdata_sp.SS
+  df500$stationdata_sp.SS<-NULL
+  df500$lam.hat500<-df500$stationdata_sp.lam.hat
+  df500$stationdata_sp.lam.hat<-NULL
+  write.csv(df500, file=paste0("3_outputs/data/PredictedAbundanceLIDAR500m",i,".csv"))  
+  
+  
+}
+
+
+library(png)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(cowplot)
+
+names<-c("ALFL","AMRO","BOCH","CEDW","CHSP","COYE","DEJU","GRAJ","HETH","LCSP","LISP",
+         "OSFL","OVEN","PAWA","REVI","RCKI","SWSP","SWTH","TEWA","WIWR","WTSP","YRWA")
+for (i in names){
+  img1 <-  rasterGrob(as.raster(readPNG(paste0("3_outputs/figures/",i,"top150m_LIDARmodel.png"))), interpolate = FALSE)
+  img2 <-  rasterGrob(as.raster(readPNG(paste0("3_outputs/maps/BestModelLIDAR150mPredicted",i,".png"))), interpolate = FALSE)
+  img3 <-  rasterGrob(as.raster(readPNG(paste0("3_outputs/figures/",i,"top500m_LIDARmodel.png"))), interpolate = FALSE)
+  img4 <-  rasterGrob(as.raster(readPNG(paste0("3_outputs/maps/BestModel500mLIDARPredicted",i,".png"))), interpolate = FALSE)
+  
+  P1<-plot_grid(img1, img2, img3, img4, 
+                align = "h", nrow=2, ncol = 2, rel_widths = c(3/5, 2/5), labels = "AUTO")
+  #tiff(paste0('3_outputs/figures/PNGplot_',i,'.tiff'), units="in", width=12, height=16, res=150)
+  #P1
+  #dev.off()
+  #tmap_save(P1, width = 1000, height = 1000, units="px", filename = paste0("3_outputs/figures/PNGplot_",i,".png"))
+  ggsave(paste0("3_outputs/figures/PNGplot_",i,".png"), plot=P1, width=12, height=16, units=c("in"), dpi=300)
+  
+}

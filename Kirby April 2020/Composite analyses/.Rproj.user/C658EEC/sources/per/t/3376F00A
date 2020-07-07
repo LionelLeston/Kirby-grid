@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1588216268744.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3032203505",
+    "id" : "3376F00A",
+    "lastKnownWriteTime" : 1588215672,
+    "last_content_update" : 1588215672,
+    "path" : "~/BERA Mentoring/Kirby April 2020/Composite analyses/1_scripts/2_GeneratingReportResults_CompositeModels.Rmd",
+    "project_path" : "1_scripts/2_GeneratingReportResults_CompositeModels.Rmd",
+    "properties" : {
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

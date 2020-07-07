@@ -1,0 +1,277 @@
+---
+title: "MSWordReportResults"
+author: "L Leston"
+date: "29/04/2020"
+output: word_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r readaic, echo=FALSE}
+## Including Plots
+ALFL.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/ALFLbestmodels50.csv",header=TRUE)
+AIC.ALFL.50<-round(ALFL.50$AIC[1],2)
+ALFL.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/ALFLbestmodels150.csv",header=TRUE)
+AIC.ALFL.150<-round(ALFL.150$AIC[1],2)
+ALFL.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/ALFLbestmodels500.csv",header=TRUE)
+AIC.ALFL.500<-round(ALFL.500$AIC[1],2)
+
+AMRO.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/AMRObestmodels50.csv",header=TRUE)
+AIC.AMRO.50<-round(AMRO.50$AIC[1],2)
+AMRO.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/AMRObestmodels150.csv",header=TRUE)
+AIC.AMRO.150<-round(AMRO.150$AIC[1],2)
+AMRO.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/AMRObestmodels500.csv",header=TRUE)
+AIC.AMRO.500<-round(AMRO.500$AIC[1],2)
+
+BOCH.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/BOCHbestmodels50.csv",header=TRUE)
+AIC.BOCH.50<-round(BOCH.50$AIC[1],2)
+BOCH.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/BOCHbestmodels150.csv",header=TRUE)
+AIC.BOCH.150<-round(BOCH.150$AIC[1],2)
+BOCH.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/BOCHbestmodels500.csv",header=TRUE)
+AIC.BOCH.500<-round(BOCH.500$AIC[1],2)
+
+CEDW.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/CEDWbestmodels50.csv",header=TRUE)
+AIC.CEDW.50<-round(CEDW.50$AIC[1],2)
+CEDW.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/CEDWbestmodels150.csv",header=TRUE)
+AIC.CEDW.150<-round(CEDW.150$AIC[1],2)
+CEDW.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/CEDWbestmodels500.csv",header=TRUE)
+AIC.CEDW.500<-round(CEDW.500$AIC[1],2)
+
+CHSP.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/CHSPbestmodels50.csv",header=TRUE)
+AIC.CHSP.50<-round(CHSP.50$AIC[1],2)
+CHSP.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/CHSPbestmodels150.csv",header=TRUE)
+AIC.CHSP.150<-round(CHSP.150$AIC[1],2)
+CHSP.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/CHSPbestmodels500.csv",header=TRUE)
+AIC.CHSP.500<-round(CHSP.500$AIC[1],2)
+
+COYE.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/COYEbestmodels50.csv",header=TRUE)
+AIC.COYE.50<-round(COYE.50$AIC[1],2)
+COYE.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/COYEbestmodels150.csv",header=TRUE)
+AIC.COYE.150<-round(COYE.150$AIC[1],2)
+COYE.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/COYEbestmodels500.csv",header=TRUE)
+AIC.COYE.500<-round(COYE.500$AIC[1],2)
+
+DEJU.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/DEJUbestmodels50.csv",header=TRUE)
+AIC.DEJU.50<-round(DEJU.50$AIC[1],2)
+DEJU.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/DEJUbestmodels150.csv",header=TRUE)
+AIC.DEJU.150<-round(DEJU.150$AIC[1],2)
+DEJU.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/DEJUbestmodels500.csv",header=TRUE)
+AIC.DEJU.500<-round(DEJU.500$AIC[1],2)
+
+GRAJ.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/GRAJbestmodels50.csv",header=TRUE)
+AIC.GRAJ.50<-round(GRAJ.50$AIC[1],2)
+GRAJ.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/GRAJbestmodels150.csv",header=TRUE)
+AIC.GRAJ.150<-round(GRAJ.150$AIC[1],2)
+GRAJ.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/GRAJbestmodels500.csv",header=TRUE)
+AIC.GRAJ.500<-round(GRAJ.500$AIC[1],2)
+
+HETH.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/HETHbestmodels50.csv",header=TRUE)
+AIC.HETH.50<-round(HETH.50$AIC[1],2)
+HETH.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/HETHbestmodels150.csv",header=TRUE)
+AIC.HETH.150<-round(HETH.150$AIC[1],2)
+HETH.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/HETHbestmodels500.csv",header=TRUE)
+AIC.HETH.500<-round(HETH.500$AIC[1],2)
+
+LCSP.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/LCSPbestmodels50.csv",header=TRUE)
+AIC.LCSP.50<-round(LCSP.50$AIC[1],2)
+LCSP.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/LCSPbestmodels150.csv",header=TRUE)
+AIC.LCSP.150<-round(LCSP.150$AIC[1],2)
+LCSP.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/LCSPbestmodels500.csv",header=TRUE)
+AIC.LCSP.500<-round(LCSP.500$AIC[1],2)
+
+LISP.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/LISPbestmodels50.csv",header=TRUE)
+AIC.LISP.50<-round(LISP.50$AIC[1],2)
+LISP.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/LISPbestmodels150.csv",header=TRUE)
+AIC.LISP.150<-round(LISP.150$AIC[1],2)
+LISP.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/LISPbestmodels500.csv",header=TRUE)
+AIC.LISP.500<-round(LISP.500$AIC[1],2)
+
+OSFL.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/OSFLbestmodels50.csv",header=TRUE)
+AIC.OSFL.50<-round(OSFL.50$AIC[1],2)
+OSFL.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/OSFLbestmodels150.csv",header=TRUE)
+AIC.OSFL.150<-round(OSFL.150$AIC[1],2)
+OSFL.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/OSFLbestmodels500.csv",header=TRUE)
+AIC.OSFL.500<-round(OSFL.500$AIC[1],2)
+
+OVEN.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/OVENbestmodels50.csv",header=TRUE)
+AIC.OVEN.50<-round(OVEN.50$AIC[1],2)
+OVEN.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/OVENbestmodels150.csv",header=TRUE)
+AIC.OVEN.150<-round(OVEN.150$AIC[1],2)
+OVEN.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/OVENbestmodels500.csv",header=TRUE)
+AIC.OVEN.500<-round(OVEN.500$AIC[1],2)
+
+PAWA.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/PAWAbestmodels50.csv",header=TRUE)
+AIC.PAWA.50<-round(PAWA.50$AIC[1],2)
+PAWA.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/PAWAbestmodels150.csv",header=TRUE)
+AIC.PAWA.150<-round(PAWA.150$AIC[1],2)
+PAWA.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/PAWAbestmodels500.csv",header=TRUE)
+AIC.PAWA.500<-round(PAWA.500$AIC[1],2)
+
+REVI.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/REVIbestmodels50.csv",header=TRUE)
+AIC.REVI.50<-round(REVI.50$AIC[1],2)
+REVI.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/REVIbestmodels150.csv",header=TRUE)
+AIC.REVI.150<-round(REVI.150$AIC[1],2)
+REVI.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/REVIbestmodels500.csv",header=TRUE)
+AIC.REVI.500<-round(REVI.500$AIC[1],2)
+
+RCKI.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/RCKIbestmodels50.csv",header=TRUE)
+AIC.RCKI.50<-round(RCKI.50$AIC[1],2)
+RCKI.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/RCKIbestmodels150.csv",header=TRUE)
+AIC.RCKI.150<-round(RCKI.150$AIC[1],2)
+RCKI.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/RCKIbestmodels500.csv",header=TRUE)
+AIC.RCKI.500<-round(RCKI.500$AIC[1],2)
+
+SWTH.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/SWTHbestmodels50.csv",header=TRUE)
+AIC.SWTH.50<-round(SWTH.50$AIC[1],2)
+SWTH.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/SWTHbestmodels150.csv",header=TRUE)
+AIC.SWTH.150<-round(SWTH.150$AIC[1],2)
+SWTH.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/SWTHbestmodels500.csv",header=TRUE)
+AIC.SWTH.500<-round(SWTH.500$AIC[1],2)
+
+SWSP.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/SWSPbestmodels50.csv",header=TRUE)
+AIC.SWSP.50<-round(SWSP.50$AIC[1],2)
+SWSP.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/SWSPbestmodels150.csv",header=TRUE)
+AIC.SWSP.150<-round(SWSP.150$AIC[1],2)
+SWSP.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/SWSPbestmodels500.csv",header=TRUE)
+AIC.SWSP.500<-round(SWSP.500$AIC[1],2)
+
+TEWA.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/TEWAbestmodels50.csv",header=TRUE)
+AIC.TEWA.50<-round(TEWA.50$AIC[1],2)
+TEWA.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/TEWAbestmodels150.csv",header=TRUE)
+AIC.TEWA.150<-round(TEWA.150$AIC[1],2)
+TEWA.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/TEWAbestmodels500.csv",header=TRUE)
+AIC.TEWA.500<-round(TEWA.500$AIC[1],2)
+
+WIWR.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/WIWRbestmodels50.csv",header=TRUE)
+AIC.WIWR.50<-round(WIWR.50$AIC[1],2)
+WIWR.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/WIWRbestmodels150.csv",header=TRUE)
+AIC.WIWR.150<-round(WIWR.150$AIC[1],2)
+WIWR.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/WIWRbestmodels500.csv",header=TRUE)
+AIC.WIWR.500<-round(WIWR.500$AIC[1],2)
+
+WTSP.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/WTSPbestmodels50.csv",header=TRUE)
+AIC.WTSP.50<-round(WTSP.50$AIC[1],2)
+WTSP.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/WTSPbestmodels150.csv",header=TRUE)
+AIC.WTSP.150<-round(WTSP.150$AIC[1],2)
+WTSP.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/WTSPbestmodels500.csv",header=TRUE)
+AIC.WTSP.500<-round(WTSP.500$AIC[1],2)
+
+YRWA.50<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/YRWAbestmodels50.csv",header=TRUE)
+AIC.YRWA.50<-round(YRWA.50$AIC[1],2)
+YRWA.150<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/YRWAbestmodels150.csv",header=TRUE)
+AIC.YRWA.150<-round(YRWA.150$AIC[1],2)
+YRWA.500<-read.csv("/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/0_data/processed/unmarked/results/YRWAbestmodels500.csv",header=TRUE)
+AIC.YRWA.500<-round(YRWA.500$AIC[1],2)
+#You can also embed plots, for example:
+#plot(pressure)
+#Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the #R code that generated the plot.
+```
+
+Model coefficients for the best *N*-mixture model predicting abundance of Alder Flycatcher *Empidonax alnorum* at the 50-m scale (AIC= `r AIC.ALFL.50`) (A), 150-m scale (AIC= `r AIC.ALFL.150`) (C), and 500-m scale (AIC= `r AIC.ALFL.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_ALFL.png)
+
+Model coefficients for the best *N*-mixture model predicting abundance of American Robin *Turdus migratorius* at the 50-m scale (AIC= `r AIC.AMRO.50`) (A), 150-m scale (AIC= `r AIC.AMRO.150`) (C), and 500-m scale (AIC= `r AIC.AMRO.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_AMRO.png)
+
+Model coefficients for the best *N*-mixture model predicting abundance of Boreal Chickadee *Poecile hudsonicus* at the 50-m scale (AIC= `r AIC.BOCH.50`) (A), 150-m scale (AIC= `r AIC.BOCH.150`) (C), and 500-m scale (AIC= `r AIC.BOCH.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_BOCH.png)
+
+Model coefficients for the best *N*-mixture model predicting abundance of Cedar Waxwing *Bombycilla cedrorum* at the 50-m scale (AIC= `r AIC.CEDW.50`) (A), 150-m scale (AIC= `r AIC.CEDW.150`) (C), and 500-m scale (AIC= `r AIC.CEDW.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_CEDW.png)
+
+Model coefficients for the best *N*-mixture model predicting abundance of Chipping Sparrow *Spizella passerina* at the 50-m scale (AIC= `r AIC.CHSP.50`) (A), 150-m scale (AIC= `r AIC.CHSP.150`) (C), and 500-m scale (AIC= `r AIC.CHSP.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_CHSP.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Common Yellowthroat *Geothlypis trichas* at the 50-m scale (AIC= `r AIC.COYE.50`) (A), 150-m scale (AIC= `r AIC.COYE.150`) (C), and 500-m scale (AIC= `r AIC.COYE.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_COYE.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Dark-eyed Junco *Junco hyemalis* at the 50-m scale (AIC= `r AIC.DEJU.50`) (A), 150-m scale (AIC= `r AIC.DEJU.150`) (C), and 500-m scale (AIC= `r AIC.DEJU.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_DEJU.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Gray Jay *Perisoreus canadensis* at the 50-m scale (AIC= `r AIC.GRAJ.50`) (A), 150-m scale (AIC= `r AIC.GRAJ.150`) (C), and 500-m scale (AIC= `r AIC.GRAJ.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_GRAJ.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Hermit Thrush *Catharus guttatus* at the 50-m scale (AIC= `r AIC.HETH.50`) (A), 150-m scale (AIC= `r AIC.HETH.150`) (C), and 500-m scale (AIC= `r AIC.HETH.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_HETH.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Le Conte's Sparrow *Ammodramus lecontei* at the 50-m scale (AIC= `r AIC.LCSP.50`) (A), 150-m scale (AIC= `r AIC.LCSP.150`) (C), and 500-m scale (AIC= `r AIC.LCSP.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_LCSP.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Lincoln's Sparrow *Melospiza lincolnii* at the 50-m scale (AIC= `r AIC.LISP.50`) (A), 150-m scale (AIC= `r AIC.LISP.150`) (C), and 500-m scale (AIC= `r AIC.LISP.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_LISP.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Olive-sided Flycatcher *Contopus cooperi* at the 50-m scale (AIC= `r AIC.OSFL.50`) (A), 150-m scale (AIC= `r AIC.OSFL.150`) (C), and 500-m scale (AIC= `r AIC.OSFL.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_OSFL.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Ovenbird *Seiurus aurocapillus* at the 50-m scale (AIC= `r AIC.OVEN.50`) (A), 150-m scale (AIC= `r AIC.OVEN.150`) (C), and 500-m scale (AIC= `r AIC.OVEN.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_OVEN.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Palm Warbler *Setophaga palmarum* at the 50-m scale (AIC= `r AIC.PAWA.50`) (A), 150-m scale (AIC= `r AIC.PAWA.150`) (C), and 500-m scale (AIC= `r AIC.PAWA.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_PAWA.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Red-eyed Vireo *Vireo olivaceus* at the 50-m scale (AIC= `r AIC.REVI.50`) (A), 150-m scale (AIC= `r AIC.REVI.150`) (C), and 500-m scale (AIC= `r AIC.REVI.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_REVI.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Ruby-crowned Kinglet *Regulus calendula* at the 50-m scale (AIC= `r AIC.RCKI.50`) (A), 150-m scale (AIC= `r AIC.RCKI.150`) (C), and 500-m scale (AIC= `r AIC.RCKI.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_RCKI.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Swainson's Thrush *Catharus ustulatus* at the 50-m scale (AIC= `r AIC.SWTH.50`) (A), 150-m scale (AIC= `r AIC.SWTH.150`) (C), and 500-m scale (AIC= `r AIC.SWTH.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_SWTH.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Swamp Sparrow *Melospiza georgiana* at the 50-m scale (AIC= `r AIC.SWSP.50`) (A), 150-m scale (AIC= `r AIC.SWSP.150`) (C), and 500-m scale (AIC= `r AIC.SWSP.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_SWSP.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Tennessee Warbler *Leiothlypis peregrina* at the 50-m scale (AIC= `r AIC.TEWA.50`) (A), 150-m scale (AIC= `r AIC.TEWA.150`) (C), and 500-m scale (AIC= `r AIC.TEWA.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_TEWA.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Winter Wren *Troglodytes hiemalis* at the 50-m scale (AIC= `r AIC.WIWR.50`) (A), 150-m scale (AIC= `r AIC.WIWR.150`) (C), and 500-m scale (AIC= `r AIC.WIWR.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_WIWR.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of White-throated Sparrow *Zonotrichia albicollis* at the 50-m scale (AIC= `r AIC.WTSP.50`) (A), 150-m scale (AIC= `r AIC.WTSP.150`) (C), and 500-m scale (AIC= `r AIC.WTSP.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_WTSP.png)
+
+
+Model coefficients for the best *N*-mixture model predicting abundance of Yellow-rumped Warbler *Setophaga coronata* at the 50-m scale (AIC= `r AIC.YRWA.50`) (A), 150-m scale (AIC= `r AIC.YRWA.150`) (C), and 500-m scale (AIC= `r AIC.YRWA.500`) (E), along with predicted abundances of this species in the Kirby grid from these respective models (B,D,F).
+
+![](/Users/llest/OneDrive/Documents/BERA Mentoring/Kirby April 2020/AVI analyses/3_outputs/figures/PNGplot_YRWA.png)

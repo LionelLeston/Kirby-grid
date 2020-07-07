@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1588434997690.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3584100709",
+    "id" : "8AC6003F",
+    "lastKnownWriteTime" : 1588435643,
+    "last_content_update" : 1588435644000,
+    "path" : "~/BERA Mentoring/Kirby April 2020/Beaudoin analyses/1_scripts/GeneratingReportResults_BeaudoinMSWord.Rmd",
+    "project_path" : "1_scripts/GeneratingReportResults_BeaudoinMSWord.Rmd",
+    "properties" : {
+        "cursorPosition" : "275,116",
+        "scrollLine" : "271",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

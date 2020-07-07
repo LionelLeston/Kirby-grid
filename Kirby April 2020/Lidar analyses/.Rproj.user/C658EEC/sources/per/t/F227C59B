@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1582086469480.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "329505143",
+    "id" : "F227C59B",
+    "lastKnownWriteTime" : 1588436352,
+    "last_content_update" : 1588436352241,
+    "path" : "~/BERA Mentoring/Kirby April 2020/Lidar analyses/1_scripts/5_April3LIDAR regular nonspatial mixture model COYE using unmarked.R",
+    "project_path" : "1_scripts/5_April3LIDAR regular nonspatial mixture model COYE using unmarked.R",
+    "properties" : {
+        "cursorPosition" : "566,0",
+        "scrollLine" : "555"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

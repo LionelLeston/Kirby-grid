@@ -1,0 +1,1 @@
+This project is used for extracting data from Beaudoin raster layers to point counts on the Kirby grid, then using those raster data to predict boreal bird abundance.
